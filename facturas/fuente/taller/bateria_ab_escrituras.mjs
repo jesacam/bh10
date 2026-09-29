@@ -140,7 +140,7 @@ async function ejecutar(ruta){
 }
 
 const A=await ejecutar('../ref/bh10-REF313.js');
-const B=await ejecutar('../web_subir/app/assets/bh10-APPV398.js');
+const B=await ejecutar('../web_subir/app/assets/bh10-APPV399.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // v359 · el diario permanente (bh10-diario) es una escritura NUEVA y
 // autorizada: aparece cada vez que cambian pagos. Se aparta de la

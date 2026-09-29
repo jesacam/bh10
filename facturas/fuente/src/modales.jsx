@@ -1751,7 +1751,7 @@ const ModalCertificar=({Combobox,IVAS,calcContratoTotal,cliCat,clientes,contrato
                   <input style={S.input} value={contratoForm.promocion||''} placeholder="toca uno de abajo o escríbelo"
                     onChange={e=>setContratoForm(p=>({...p,promocion:e.target.value.trim()}))}/></label>
                 <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:4}}>
-                  {[['illescas-bh10','BH10 Illescas (12)'],['carvari-18','Carvari Homes (18)'],['salto-caballo','Salto del Caballo']].map(([cod,rot])=>(
+                  {[['illescas-bh10','BH10 Illescas (12)'],['carvari-18','Carvari Homes (18)'],['salto-caballo','Salto del Caballo'],['illescas-living','Illescas Living (10)']].map(([cod,rot])=>(
                     <button key={cod} type="button"
                       style={{...S.sm(contratoForm.promocion===cod?C.sc:C.mt),padding:'4px 10px',minHeight:0,fontSize:10.5}}
                       onClick={()=>setContratoForm(p=>({...p,promocion:p.promocion===cod?'':cod}))}>{rot}</button>
