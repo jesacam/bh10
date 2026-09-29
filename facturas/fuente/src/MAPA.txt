@@ -1,0 +1,59 @@
+MAPA DEL FUENTE · v342 (26 módulos + 8 almacenes + envoltorio)
+  · taller: 34 baterías · ref_produccion/ = bundle desplegado (ver su LEEME)
+════════════════════════════════════════════════
+NÚCLEO
+  app.jsx           10.737 líneas · el componente App y sus vistas (encogiendo
+                    por fases: los estados se van a almacenes por dominio)
+  almacenes/        UN hook por dominio: estados, guardado y nada más.
+    facturas.js     useFacturas — invoicesAll, formulario, filtros, fusión,
+                    selección, SEPA y catálogos prov/cli (44 estados +
+                    persistProvCat/persistCliCat). Sesión 7, la última.
+    contratos.js    useContratos — contratos, obras, presupuestos y
+                    certificaciones (18 estados + persistObras). Sesión 6.
+    nominas.js      useNominas — empleados, nóminas, remesas SEPA y embargos
+                    (24 estados + persistNominas/persistRemesas). Sesiones 5 y 334.
+    tesoreria.js    useTesoreria — extractos N43 y conciliación (5 estados
+                    + persistN43). Sesión 4.
+    verifactu.js    useVerifactu — cadena de registros AEAT, eventos, cotejo
+                    (9 estados + 2 refs + persistVfRegistros/persistVfCfg). Sesión 3.
+    seguros.js      useSeguros — flota, pólizas, filtros, formularios y bajas
+                    (14 estados + persistFlota/persistPolizas). Sesión 1 de 7.
+    promociones.js  usePromociones — configuraciones de comprador, resumen y
+                    erratas (5 estados + guardaPromoCfg). Sesión 2.
+    fichaje.js      useFichaje — planificación mensual y ventanas del fichaje
+                    (3 estados + guardarPlanMes). Sesión 2.
+  version.js        APP_VERSION — SIEMPRE en sincronía con el bundle
+  estetica.jsx      temas, paleta viva C y estilos S (objetos mutables compartidos)
+  basicos.js        fmt, fmtK, uid, fechas, parseNum
+DINERO
+  saldos.js         getSaldo/getEstado, anticipos, abonos — la verdad del dinero
+  tesoreria.js      previsionTesoreria: la previsión a 6 meses
+  desglose.js       lectura, cálculo, cuadre y reparación del IVA
+  bancos.js         Norma 43, conciliación, saneado SEPA
+  copias.js         copia v9, motor REC de recurrentes, imitaNumero, series
+  retenciones.js    retenciones de garantía: vencimientos, liquidables, reclamación
+NÓMINAS Y GENTE
+  embargos.js       607 LEC, giros al juzgado, cuadres de nómina, IBAN
+  fichaje.js        jornadas, turnos, planificación, cuadre de horas
+  certificaciones.js líneas por fases, coste empresa (SS), ISP, proformas
+CONTRATOS Y OBRA
+  extras.js         partidas extra, respaldo «por escrito», precios
+  promociones.js    líneas de PDF, Excel, fusión y agrupado
+  financiacion.js   cuota francesa, Euríbor, líneas dispuestas
+FICHAS Y RGPD
+  fichas.js         comparar/fusionar duplicados, contactos, dominios
+  rgpd.js           supresión, cesiones, plazos, expedientes de notaría
+  polizas.js        ramos, primas, vencimientos, flota
+CUMPLIMIENTO Y APOYO
+  verifactu.js      cadena de huellas, XML, semáforo, envíos
+  historial.js      descripción de cambios, guardado diferido
+  avisos.js         WhatsApp, textos y condiciones
+  ia.js             precios, coste estimado, saneado de resúmenes
+  borradores.js     drafts locales por empresa
+  ajustes.jsx       acordeón declarado de Ajustes
+  modales.jsx       35 modales extraídos (formulario de factura, pago, certificar, SEPA, reparto, fichas, VERI*FACTU, RGPD y todos los overlays)
+  ayuda.js          12 módulos de ayuda (109 apartados)
+ENVOLTORIO (src-envoltorio/)
+  envoltorio.jsx    login, bóveda Face ID, sesiones, almacén, membresía,
+                    App Check — transcripción verbatim con imports reales
+                    (firebase 10.14.1). Compila con taller/build_envoltorio.mjs.

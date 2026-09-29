@@ -1,0 +1,117 @@
+═══ PRE-VUELO OBLIGATORIO · antes de entregar CUALQUIER zip ═══
+Desde v314 el fuente es modular (src/). Toda fase B y todo desarrollo
+nuevo termina pasando ESTA lista entera, en orden:
+
+ 1. node taller/comprobar_sueltos.mjs      → nombres sin declarar (esbuild NO avisa)
+ 2. node taller/build_app.mjs              → compilación
+ 3. node taller/bateria_render.mjs         → 3 escenarios de permisos
+ 4. node taller/bateria_saldos.mjs         → Panel = Pendientes = 359.285,06 € (datos reales)
+ 5. node taller/bateria_lector_filtros.mjs → lector: filtros sí, acciones no
+ 6. node taller/bateria_acordeon.mjs       → Ajustes: apertura única
+ 7. node taller/bateria_estabilidad_aj.mjs → Ajustes no se reconstruye (nodo idéntico)
+ 8. node taller/build_ref313.mjs (una vez) + node taller/bateria_ab_completa.mjs
+                                           → A/B de 7 PANTALLAS carácter a carácter
+ 9. node taller/bateria_ab_escrituras.mjs  → A/B de ESCRITURAS con reloj congelado:
+                                             pago · certificación · remesa C34 (XML SEPA)
+                                             · ficha proveedor · nube final completa
+10. node taller/bateria_embargos.mjs       → circuito de embargos (aviso sin PDF,
+                                             transferencia al juzgado, 607 LEC)
+10b. node taller/bateria_envoltorio.mjs   → el envoltorio (login, bóveda,
+                                             sesiones) arranca con Firebase real
+                                             y su login es idéntico a la reversa
+11. Regenerar precache sw.js (md5) + rastreador anti-404 + coherencia de punteros
+12. Sincronizar src/version.js con los nombres de fichero del bundle
+
+22. node taller/bateria_hooks.mjs          → orden de hooks estable navegando
+                                             (fase de almacenes por dominio)
+   Desde v327 lleva AÑADIDO un bloque de cobertura por dominio mudado: las
+   seis vistas ida y vuelta, la ventana propia de cada almacén y una sonda de
+   datos vivos por dominio. El recorrido original NO se tocó. Al mudar un
+   dominio nuevo se añade su fila a la tabla DOMINIOS y la red crece con la
+   fase. Probado con mutaciones: la batería anterior daba VERDE con los tres
+   almacenes rotos; ésta los caza.
+23. node taller/bateria_extras.mjs        → partidas extra: reglas + pantalla
+                                             (ancla real 25.940,00 € sin respaldo)
+24. node taller/bateria_ab_v324.mjs       → A/B de 17 PANTALLAS contra el bundle
+                                             DESPLEGADO (innerHTML: marcado y estilos)
+25. node taller/bateria_esc_v324.mjs      → A/B de ESCRITURAS contra el desplegado
+26. node taller/bateria_esc_dominios.mjs  → escrituras de los dominios MUDADOS:
+       baja/restaura/alta de póliza, alta de vehículo y deshacer global. Existe
+       porque S1–S6 no accionan nada de seguros/fichaje/promociones: justo lo
+       que la fase de almacenes mueve era lo que ninguna prueba escribía.
+       Al mudar un dominio nuevo, se le añade aquí su escenario de escritura.
+27. node taller/bateria_ab_permisos.mjs   → los TRES perfiles (dueño, Benito
+       recortado, solo lectura) × 6 pantallas, comparados con el desplegado.
+       bateria_render los monta pero nunca los compara con producción.
+28. node taller/bateria_n43.mjs           → importación de un extracto N43 REAL:
+       leer, conciliar contra las pendientes, marcar y aplicar, comparando
+       pantallas, escrituras y nube final con el desplegado. Necesita un
+       C43_*.txt en /mnt/user-data/uploads. ESE FICHERO NO VIAJA EN EL ZIP:
+       lleva movimientos, nombres, NIF e IBAN reales.
+29. node taller/bateria_facturas_dominio.mjs → los tres circuitos del almacén de
+       facturas que nadie accionaba: guardar la FICHA de un proveedor
+       (persistProvCat), dar de ALTA dos facturas a dos proveedores distintos
+       y FUSIONARLOS, comprobando que el origen queda a cero y el destino se
+       lleva las dos. Todo comparado con el bundle desplegado.
+30. node taller/bateria_nominas_reales.mjs → las 18 nóminas reales de agosto.
+       Congela la regresión del lector: confundía «TOTAL APORTACIONES» con
+       «B. TOTAL A DEDUCIR» y 17 de 18 salían en rojo. Exige 17 rojas con la
+       lectura mala, 0 tras el reparador, 17 avisos escritos y los LÍQUIDOS
+       intactos. Incluye el embargo de 53,70 € que necesita el campo «otras».
+31. node taller/bateria_remesa_embargo.mjs → la remesa C34 de nóminas ENTERA,
+       sobre el XML que genera la app: 17 nóminas + la transferencia al
+       juzgado en un solo fichero, con el total cuadrando al céntimo. El
+       importe del embargo lo dicta la nómina leída, no la ficha.
+32. node taller/bateria_traspasos.mjs     → traspasos entre empresas del grupo:
+       importes en formato español, validación de IBAN, y el C34 con las 37
+       etiquetas del de proveedores (SUPP) y una sola transferencia.
+33. node taller/bateria_traspaso_pantalla.mjs → el circuito en pantalla: alta de
+       la empresa del grupo, traspaso desde el «+», concepto editable, SEPA
+       descargado, apunte en el historial y salto a la pantalla del banco.
+34. node taller/bateria_generadores.mjs   → los ficheros que SALEN de la empresa,
+       comparados BYTE A BYTE (sha-256) contra el bundle desplegado: el Excel
+       de facturas, el ZIP de la gestoría, el PDF de una factura emitida y el
+       de un contrato, más el HTML que genera cada documento. Ojo: «Descargar»
+       abre el VISOR; el PDF nace al pulsar «Compartir PDF». Se normaliza el
+       sello «BH10 vNNN» del pie y NADA MÁS.
+35. node taller/bateria_sepa_estricta.mjs → los C34 contra la NORMA, no contra
+       producción: 27 reglas por fichero (NbOfTxs = transferencias reales,
+       CtrlSum = suma de importes, todos los IBAN con mod-97, ChrgBr SLEV,
+       importes con 2 decimales, sin & sin escapar…) más tres casos malos que
+       deben rechazarse antes de generar nada.
+36. node taller/bateria_verifactu_norma.mjs → VERI*FACTU contra la
+       especificación de la AEAT, con su VECTOR DE PRUEBA OFICIAL dentro: la
+       cadena publicada por Hacienda tiene que dar su hash publicado. Orden
+       exacto de los 8 campos del alta y los 5 de la anulación, dd-mm-aaaa,
+       ISO 8601 con huso, encadenamiento y leyenda obligatoria.
+37. node taller/bateria_expediente.mjs    → el expediente para notaría, probando
+       la funcion pura expedienteNotaria en vez de pelearse con el boton:
+       titulares (el principal es el cliente, no solo los cotitulares), las tres
+       fuentes de identificacion por orden (t.dni, la ficha, el cif), el BLOQUEO
+       por solicitud de supresion RGPD, y que la copia de DNI de otra persona no
+       se cuela. Deja escrito que hoy el DNI NO es bloqueante (rgpd.js L222).
+38. node taller/bateria_numeracion.mjs    → la serie AAnnnnn: arranque desde la
+       ultima usada, correlativa sin saltos, cambio de prefijo cada 1 de enero
+       (2700001 el 1-1-2027), contador propio POR EMPRESA, convivencia con los
+       F-2026/NNN viejos y aviso al agotarse la serie.
+39. node taller/bateria_serie.mjs         → que el dato PERSISTA: se escribe en
+       Ajustes, se DESMONTA la app entera y se vuelve a montar leyendo de la
+       nube. Vive en bh10-company-v2, la ficha de cada empresa.
+40. node taller/bateria_rectificativa.mjs → certificar genera su registro de alta
+       en VERI*FACTU. Era el bug: la factura nacia sin el NIF del cliente y
+       vfProblemas la rechazaba en silencio. Tres puntos del recorrido por
+       pantalla quedan marcados PENDIENTE; la logica esta en la bateria 18.
+   Los pasos 24 y 25 leen ref_produccion/ (ver su LEEME.txt): tras dar por buena
+   una versión, se sustituye el bundle de esa carpeta por el recién desplegado.
+
+La referencia del A/B es el v313 (BH10_FacturaControl_v313.tsx, incluido en el
+zip de fuente). Cuando una fase B cambie comportamiento A PROPÓSITO, se
+documenta la diferencia esperada y se renueva la referencia.
+Los datos reales de las baterías: BH10_copia_completa (subir la copia del día).
+
+ENVOLTORIO (desde v315): su fuente vive en src-envoltorio/envoltorio.jsx
+(transcripción verbatim del minificado con imports reales de firebase@10.14.1).
+Compilar: node taller/build_envoltorio.mjs. La reversa v310 queda en assets
+con sus dos chunks (ver assets/LEEME_MARCHA_ATRAS.txt). Renombrados de los
+identificadores cortos (qDe, GDe, mne, x5…): SOLO de uno en uno y con la
+batería del envoltorio delante.

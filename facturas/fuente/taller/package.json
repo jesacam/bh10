@@ -1,0 +1,25 @@
+{
+  "name": "bh10-facturacontrol",
+  "private": true,
+  "version": "317.0.0",
+  "description": "FacturaControl \u00b7 fuente modular + taller de compilaci\u00f3n y bater\u00edas",
+  "type": "module",
+  "dependencies": {
+    "@babel/parser": "8.0.4",
+    "@babel/traverse": "8.0.4",
+    "@zip.js/zip.js": "2.8.57",
+    "acorn": "8.18.0",
+    "acorn-jsx": "5.3.2",
+    "acorn-walk": "8.3.5",
+    "esbuild": "0.28.2",
+    "firebase": "10.14.1",
+    "jsdom": "30.0.1",
+    "jszip": "3.10.1",
+    "pdf-lib": "1.17.1",
+    "qrcode": "1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "2.15.4",
+    "xlsx": "0.18.5"
+  }
+}

@@ -1,0 +1,23 @@
+import {JSDOM} from 'jsdom';
+import React from 'react';
+import * as JSXR from 'react/jsx-runtime';
+import {createRoot} from 'react-dom/client';
+import fs from 'fs';
+const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://bh10group.com/app/',pretendToBeVisual:true});
+for(const k of ['window','document','navigator','localStorage','HTMLElement','Node','Event','CustomEvent','Blob','URL','atob','btoa','FileReader','crypto']){try{globalThis[k]=dom.window[k]??globalThis[k];}catch(e){}}
+globalThis.window=dom.window;
+window.matchMedia=()=>({matches:false,addListener(){},removeListener(){}});
+window.requestAnimationFrame=cb=>setTimeout(cb,0);globalThis.requestAnimationFrame=window.requestAnimationFrame;
+class RO{observe(){}unobserve(){}disconnect(){}}window.ResizeObserver=RO;globalThis.ResizeObserver=RO;
+window.IntersectionObserver=class{observe(){}unobserve(){}disconnect(){}};window.scrollTo=()=>{};
+window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
+window.BH10_EMPRESA={sub:'',nombre:'BIG HOUSE 2010'};window.BH10_ROL='admin';window.BH10_PERMISOS=null;
+const nube={};for(const k of Object.keys(datos.claves))nube[k]=datos.claves[k];
+window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const errores=[];
+console.error=(...a)=>{errores.push(a.map(String).join(' ').slice(0,600));};
+createRoot(document.getElementById('root')).render(React.createElement(App));
+await new Promise(r=>setTimeout(r,1800));
+for(const e of errores.slice(0,2))console.log('→',e.split('\n').slice(0,3).join(' | '));
