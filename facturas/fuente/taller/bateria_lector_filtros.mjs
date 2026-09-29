@@ -20,10 +20,10 @@ window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.BH10_EMPRESA={sub:'',nombre:'BIG HOUSE 2010'};
 // datos: una factura con documento y otra sin él
 import fs from 'fs';
-const d=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const d=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const nube={'bh10-fc-v3':d.claves['bh10-fc-v3']};
 window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,set:async(k,v)=>{nube[k]=String(v);return{key:k,value:v}},delete:async k=>{delete nube[k];return{key:k,deleted:true}},list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 for(const esc of [
   {n:'MIEMBRO lector de facturas',permisos:{facturas:'lectura'},esperaFiltros:true,esperaAcciones:false},

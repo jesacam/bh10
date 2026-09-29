@@ -68,7 +68,7 @@ const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></ht
 for(const k of ['window','document','navigator','localStorage','sessionStorage','HTMLElement','Node','CustomEvent','Event','FileReader','Blob','URL','atob','btoa']){try{globalThis[k]=dom.window[k]??globalThis[k];}catch(e){}}
 globalThis.window=dom.window;
 // datos reales para que haya facturas (y el botón Excel)
-const _copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const _copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const nube={'bh10-fc-v3':_copia.claves['bh10-fc-v3']};
 window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,set:async(k,v)=>{nube[k]=String(v);return{key:k,value:v}},delete:async k=>{delete nube[k];return{key:k}},list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
 const oe=console.error;console.error=()=>{};
@@ -80,7 +80,7 @@ window.IntersectionObserver=class{observe(){}unobserve(){}disconnect(){}};window
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.BH10_EMPRESA={sub:'',nombre:'BIG HOUSE 2010'};window.BH10_ROL='admin';
 window.BH10_PERMISOS={facturas:'admin',contratos:'lectura',nominas:'admin',seguros:'',tesoreria:'',ajustes:'',acciones:{exportar:false,pagos:false},sub:{emitidas:'',nominas:'',fichajes:'admin'}};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
 const root=createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 await new Promise(r=>setTimeout(r,900));

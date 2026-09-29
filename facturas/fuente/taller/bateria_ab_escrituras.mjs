@@ -11,7 +11,7 @@ import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 import {explicarSerie} from './_delta.mjs';
 import {normNavegacionTexto} from './_delta.mjs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=1756000000000;
 function azarSembrado(sem){let a=sem>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
@@ -140,7 +140,7 @@ async function ejecutar(ruta){
 }
 
 const A=await ejecutar('../ref/bh10-REF313.js');
-const B=await ejecutar('../web_subir/app/assets/bh10-APPV393.js');
+const B=await ejecutar('../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // v359 · el diario permanente (bh10-diario) es una escritura NUEVA y
 // autorizada: aparece cada vez que cambian pagos. Se aparta de la

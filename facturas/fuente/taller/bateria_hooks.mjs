@@ -10,7 +10,7 @@ import React from 'react';
 import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://bh10group.com/app/',pretendToBeVisual:true});
 for(const k of ['window','document','navigator','localStorage','sessionStorage','HTMLElement','Node','Event','CustomEvent','Blob','URL','atob','btoa','FileReader','crypto']){try{globalThis[k]=dom.window[k]??globalThis[k];}catch(e){}}
 globalThis.window=dom.window;
@@ -39,7 +39,7 @@ const oe=console.error, ow=console.warn;
 console.error=(...a)=>{dichos.push(a.map(x=>(x&&x.message)||String(x)).join(' '));};
 console.warn =(...a)=>{dichos.push(a.map(x=>(x&&x.message)||String(x)).join(' '));};
 
-const {default:App}=(await import('../web_subir/app/assets/bh10-APPV393.js'));
+const {default:App}=(await import('../web_subir/app/assets/bh10-APPV397.js'));
 const root=createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 const E=ms=>new Promise(r=>setTimeout(r,ms));

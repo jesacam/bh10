@@ -8,7 +8,7 @@ import React from 'react';
 import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://bh10group.com/app/',pretendToBeVisual:true});
 for(const k of ['window','document','navigator','localStorage','sessionStorage','HTMLElement','Node','Event','CustomEvent','Blob','URL','atob','btoa','FileReader','crypto']){try{globalThis[k]=dom.window[k]??globalThis[k];}catch(e){}}
 globalThis.window=dom.window;
@@ -26,7 +26,7 @@ window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,
   delete:async k=>{delete nube[k];return{key:k}},
   list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),
   getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
-const {default:App}=(await import('../web_subir/app/assets/bh10-APPV393.js'));
+const {default:App}=(await import('../web_subir/app/assets/bh10-APPV397.js'));
 const oe=console.error;console.error=()=>{};
 const root=createRoot(document.getElementById('root'));
 root.render(React.createElement(App));

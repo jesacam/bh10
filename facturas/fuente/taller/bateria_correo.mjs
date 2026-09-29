@@ -61,7 +61,7 @@ const bytes=b64urlABytes('JVBERi0xLjQ-Xw');
 ok(bytes[0]===0x25&&bytes[1]===0x50&&bytes[2]===0x44&&bytes[3]===0x46&&bytes.length===10,'base64url (con - y _ y sin relleno) → bytes de %PDF');
 
 // facturas reales: qué falta en el T3 hasta el 13-08 (el paquete real)
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const inv2=JSON.parse(copia.claves['bh10-fc-v3']);
 const fiscal=(i)=>i&&!['anticipo','cobro','personal','presupuesto'].includes(i.tipo)&&!i.anulada;
 const t3=inv2.filter(i=>fiscal(i)&&String(i.fecha||'')>='2026-07-01'&&String(i.fecha||'')<='2026-08-13');

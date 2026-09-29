@@ -17,7 +17,7 @@ const R=await import(tmp);
 let fallos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const contratos=JSON.parse(datos.claves['bh10-contratos']);
 const cliCat=JSON.parse(datos.claves['bh10-clicat']||'[]');
 

@@ -7,7 +7,7 @@
 import fs from 'fs';
 import {remesasSinPagos,facturasEnVariasRemesas,pagosSinRastro,pendientesConCargo,evidenciaDePago,csvAuditoria,palabrasProv,numerosDelConcepto} from '../src/auditoria.js';
 let n=0,mal=0;const ok=(c,t)=>{n++;if(!c){mal++;console.log('  ✗',t);}else console.log('  ✓',t);};
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const inv=JSON.parse(copia.claves['bh10-fc-v3']);const rem=JSON.parse(copia.claves['bh10-remesas']);
 // v369 (06-09-2026) · re-anclada a la copia del 06-09 (la del 03-09 no viaja):
 // 946 facturas y 23 remesas, contadas aparte en Python sobre el JSON crudo.

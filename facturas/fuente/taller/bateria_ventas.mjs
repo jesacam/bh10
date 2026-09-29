@@ -2,7 +2,7 @@
 import fs from 'fs';
 import {idCliente,asegurarIds,nuevaVivienda,viviendasDeObra,viviendasDeCliente,cotitularesDe,normalizaTitulares,aplicarRecibidoAVivienda,aplicarMejoras,totalMejoras,precioTotal,precioConIva,resumenObra,etiquetaVivienda,parteVendedora,csvViviendas,ROLES_OBRA,ESTADOS_VIVIENDA} from '../src/ventas.js';
 let n=0,mal=0;const ok=(c,t)=>{n++;if(!c){mal++;console.log('  ✗',t);}else console.log('  ✓',t);};
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const cliCat=JSON.parse(copia.claves['bh10-clicat']||'[]');
 ok(ROLES_OBRA.length===2&&ESTADOS_VIVIENDA.length===4,'roles de obra (promotora/constructora) y estados de vivienda');
 const obra={id:'ob1',alias:'Residencial Yuncos'};
@@ -52,7 +52,7 @@ const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></ht
 for(const k of ['window','document','navigator','localStorage','sessionStorage','HTMLElement','Node','CustomEvent','Event','FileReader','Blob','URL','atob','btoa']){try{globalThis[k]=dom.window[k]??globalThis[k];}catch(e){}}
 globalThis.window=dom.window;
 // datos reales para que haya facturas (y el botón Excel)
-const _copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const _copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const nube={'bh10-fc-v3':_copia.claves['bh10-fc-v3']};
 window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,set:async(k,v)=>{nube[k]=String(v);return{key:k,value:v}},delete:async k=>{delete nube[k];return{key:k}},list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
@@ -75,7 +75,7 @@ const cliId=idCliente(cli0);
 nube['bh10-clicat']=JSON.stringify(asegurarIds(cliCat));
 nube['bh10-obras']=JSON.stringify([{id:'ob1',alias:'Residencial Yuncos',activa:true,rol:'promotora',otros:[]},{id:'ob2',alias:'Obra ajena',activa:true,rol:'constructora',otros:[]}]);
 nube['bh10-viviendas']=JSON.stringify([{...nuevaVivienda('ob1',{identificador:'4',tipologia:'Chalet pareado',precio:250000,estado:'reservada'}),titulares:[{clienteId:cliId,porcentaje:100,regimen:''}]}]);
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
 const root=createRoot(document.getElementById('root'));
 const errores=[];const oe=console.error;console.error=(...a)=>{errores.push(a.map(String).join(' ').slice(0,200));};
 root.render(React.createElement(App));

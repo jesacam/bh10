@@ -5,7 +5,7 @@ import React from 'react';
 import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
-const d=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const d=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 async function medir(ruta,nombre){
   const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://bh10group.com/app/',pretendToBeVisual:true});
   for(const k of ['window','document','navigator','localStorage','sessionStorage','HTMLElement','Node','CustomEvent','Event','FileReader','Blob','URL','atob','btoa','getComputedStyle'])

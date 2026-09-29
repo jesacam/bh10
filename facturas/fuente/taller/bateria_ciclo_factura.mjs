@@ -18,7 +18,7 @@ import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=new Date('2026-08-24T11:00:00Z').getTime();
 const OBRA='OBRA PRUEBA PPTO';
 const PPTO=50000, IMPORTE=10000;
@@ -55,7 +55,7 @@ dom.window.document.createElement=(t,...r)=>{const el=crearOrig(t,...r);
 window.URL.createObjectURL=()=>'blob:x';window.URL.revokeObjectURL=()=>{};
 
 const oe=console.error;console.error=()=>{};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const E=ms=>new Promise(x=>setTimeout(x,ms));
 for(let i=0;i<320;i++){await E(25);if(document.getElementById('root').textContent.includes('Pendiente de pago'))break;}

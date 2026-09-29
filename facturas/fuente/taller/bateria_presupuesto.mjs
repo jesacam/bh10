@@ -10,11 +10,11 @@ const dom=new JSDOM('<!doctype html>',{url:'https://bh10group.com/app/'});
 globalThis.window=dom.window;globalThis.document=dom.window.document;
 window.__BH10_R=React;window.__BH10_JSX=JSXR;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
-const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV397.js');
 const {previsionTesoreria,vfPlanReintento}=I;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const employees=JSON.parse(datos.claves['bh10-employees']);
 const polizas=JSON.parse(datos.claves['bh10-polizas']||'[]');
 const invoices=JSON.parse(datos.claves['bh10-fc-v3']);

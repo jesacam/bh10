@@ -11,7 +11,7 @@ import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 import {validarSEPA} from './_sepa.mjs';
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=new Date('2026-08-24T11:00:00Z').getTime();
 const GREEN_IBAN='ES9121000418450200051332';
 
@@ -88,7 +88,7 @@ window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,
   getStatus:()=>({fase:'ok',error:'',ultimaEscritura:FIJO,errorEscritura:'',pendientes:0,conflicto:null})};
 
 const oe=console.error;console.error=()=>{};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
 const E=ms=>new Promise(x=>setTimeout(x,ms));
 let fallos=0;
 const ok=(c,m)=>{oe((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};

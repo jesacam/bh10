@@ -3,6 +3,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import * as XLSX from "xlsx";
 import {APP_VERSION} from './version';
 import {describirDispositivo,dispositivoLargo} from './dispositivo.js';
+import {avisosLectura,saneaLectura,giroValido} from './lectura.js';
 import {TEMAS,temaPorId,PALETA_OSCURA,PALETA_CLARA,C,buildS,S,aplicarTema,CAPAS} from './estetica';
 import {fmt,fmtK,uid,fechaRegistroDe,fmtDate,parseNum} from './basicos';
 import {abonosDe,indiceAnticipos,importeAbonado,getAnticiposAplicados,getTotalPagado,esAnulada,esGastoFiscal,esDeudaProveedor,esAbono,getSaldo,getEstado} from './saldos';
@@ -252,7 +253,11 @@ const escXml = s => txtSeguro(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 // Reduce fotos antes del OCR: menos tokens de visión y payload más ligero.
 // Convierte también HEIC→JPEG en Safari. Devuelve null si no procede (ya pequeña o error).
-const downscaleImage = (file, maxSide=1280, quality=0.82) => new Promise((res)=>{
+// v397 · opts.girar (0|90|180|270, sentido horario) y opts.autoVertical: una
+// foto apaisada de una factura casi siempre es la página tumbada (iPhone plano
+// sobre la mesa), así que se pone vertical girándola a la derecha antes de que
+// la IA la lea. El giro aplicado viaja en blob._girado para el reintento.
+const downscaleImage = (file, maxSide=1280, quality=0.82, opts={}) => new Promise((res)=>{
   try{
     const img=new Image();
     const url=URL.createObjectURL(file);
@@ -260,11 +265,17 @@ const downscaleImage = (file, maxSide=1280, quality=0.82) => new Promise((res)=>
       URL.revokeObjectURL(url);
       const w=img.naturalWidth,h=img.naturalHeight;
       if(!w||!h){res(null);return;}
+      let girar=[90,180,270].includes(+opts.girar)?+opts.girar:0;
+      if(!girar&&opts.autoVertical&&w>h*1.15)girar=90;
       const scale=Math.min(1,maxSide/Math.max(w,h));
+      const sw=Math.max(1,Math.round(w*scale)),sh=Math.max(1,Math.round(h*scale));
       const cv=document.createElement('canvas');
-      cv.width=Math.max(1,Math.round(w*scale));cv.height=Math.max(1,Math.round(h*scale));
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      cv.toBlob(b=>res(b||null),'image/jpeg',quality);
+      const lado=girar===90||girar===270;
+      cv.width=lado?sh:sw;cv.height=lado?sw:sh;
+      const cx=cv.getContext('2d');
+      cx.translate(cv.width/2,cv.height/2);cx.rotate(girar*Math.PI/180);
+      cx.drawImage(img,-sw/2,-sh/2,sw,sh);
+      cv.toBlob(b=>{if(b)try{b._girado=girar;}catch(e){} res(b||null);},'image/jpeg',quality);
     };
     img.onerror=()=>{URL.revokeObjectURL(url);res(null);};
     img.src=url;
@@ -2439,6 +2450,8 @@ function App(){
     if(!inv.base2){delete inv.base2; delete inv.tipoIva2;}
     if(!(inv.desglose||[]).length)delete inv.desglose;
     const _adjF=inv._file; delete inv._file;
+    const _giroF=inv._giro||0; delete inv._giro; delete inv._avisos;
+    delete inv._lista; delete inv._multi; delete inv._recuperado; // v397: eran del lector y se colaban en la nube
     const _bzId=inv._buzonId; delete inv._buzonId;
     if(Array.isArray(form.lineas)&&form.lineas.length)inv.lineas=form.lineas;
     if(!inv.ibanProveedor){const _fp=getSupplierData(inv.proveedor);if(_fp&&_fp.iban)inv.ibanProveedor=_fp.iban;}
@@ -2495,7 +2508,7 @@ function App(){
     }
     else setInvoices(p=>[...p,inv]);
     if(batchReviewIdx!==null){borrarDraft(DRAFT_F);notify('Registrada ✓ — siguiente factura');advanceBatch(true);return;}
-    if(_adjF)subirAdjuntos([[inv.id,_adjF]]); // v355: también al editar (sustituye el anterior)
+    if(_adjF)subirAdjuntos([[inv.id,_adjF,_giroF]]); // v355: también al editar (sustituye el anterior)
     if(_bzId&&window.bh10Buzon){window.bh10Buzon.borrar(_bzId).catch(()=>{});setBuzon(p=>p.filter(x=>x.id!==_bzId));}
     borrarDraft(DRAFT_F);
     notify(editing?'Actualizada':'Registrada');setShowForm(false);
@@ -3479,7 +3492,7 @@ function App(){
   const faltaClaveIA=()=>{
     if(iaPorWorker())return false;   /* v368: la clave vive en el Worker */if(ES_APP&&!String(anthKey||'').trim()){notify('🔑 Falta la clave del lector — Ajustes → 🔑 Clave API de Anthropic','error');return true;}return false;};
   // ═══ EXTRACTOR OCR (reutilizable: individual y lote) ═══
-  const extractInvoiceData = async (file, retried) => {
+  const extractInvoiceData = async (file, retried, giro) => {
     if(!puedeAccion('lector')){notify('🔒 Sin permiso para usar el lector IA: pídeselo al dueño en Master','error');throw new Error('sin permiso: lector');}
     if (file.size > 15 * 1024 * 1024) throw new Error('Archivo >15 MB');
 
@@ -3490,9 +3503,11 @@ function App(){
     // Fotos: reducir a 1280px + JPEG antes de enviar (≈30-50% menos tokens de visión)
     let source = file;
     let mediaType = file.type;
+    let giroAplicado = 0;
     if (isImg) {
-      const small = await downscaleImage(file);
-      if (small) { source = small; mediaType = 'image/jpeg'; }
+      // v397 · primer intento: apaisada → vertical; reintento: el giro que pidió la IA
+      const small = await downscaleImage(file, 1280, 0.82, giro===undefined ? {autoVertical:true} : {girar:giro});
+      if (small) { source = small; mediaType = 'image/jpeg'; giroAplicado = small._girado || 0; }
     }
     if (!mediaType || mediaType === 'application/octet-stream') {
       mediaType = isImg ? 'image/jpeg' : 'application/pdf';
@@ -3517,7 +3532,7 @@ function App(){
         system: 'Extraes datos de facturas españolas a JSON.',
         messages: [{ role: 'user', content: [
           docBlock,
-          { type: 'text', text: 'Si el documento contiene VARIAS facturas distintas (distinto nº o emisor), devuélvelas TODAS dentro del array "docs"; si solo hay una, el array tendrá un elemento. Responde SOLO este JSON: {"docs":[{"f":"fecha emisión YYYY-MM-DD","n":"nº factura","pr":"nombre EMISOR","pc":"CIF emisor","pd":"dirección emisor","cl":"nombre DESTINATARIO (cliente)","cc":"CIF destinatario","co":"concepto breve","ca":"categoría","imp":[{"b":base_imponible,"iv":pct_iva_de_esa_base,"c":cuota_de_iva_de_esa_base,"sp":true SOLO si ESA base concreta va en inversión del sujeto pasivo}],"ir":pct_irpf,"t":total_factura,"v":"vencimiento","ib":"IBAN del bloque de pago/domiciliación, transcrito CARÁCTER A CARÁCTER, solo letras y números sin espacios; los 2 dígitos tras ES son de CONTROL: no los deduzcas ni los corrijas. Si algún carácter no es claramente legible devuelve ib vacío — mejor vacío que inventado","sp":true si la factura indica INVERSION DEL SUJETO PASIVO (IVA no repercutido art.84; el total NO incluye IVA),"pf":true si el documento es PROFORMA o solicitud de pago previa (factura definitiva → false),"fp":"forma pago","ob":"obra/dirección envío","lin":[{"d":"descripción de la línea","q":cantidad,"pu":precio unitario sin IVA,"imp":importe de la línea sin IVA}]}]}. En "imp" pon UNA ENTRADA POR CADA BASE IMPONIBLE del resumen de impuestos: si la factura tiene bases a tipos distintos (por ejemplo 21% y 10%, o 21% y 4%), devuélvelas TODAS, no solo la mayor. Copia los importes del cuadro de totales, no los sumes ni los redondees. Los tipos posibles en España son 21, 10, 4 y 0 (exento). Si la factura MEZCLA una base con IVA normal y otra en inversión del sujeto pasivo (ISP, art. 84 — típico en obra), marca "sp":true SOLO en LA ENTRADA de esa base, con "iv":0 y "c":0, y NO actives el "sp" global, que se reserva para cuando TODA la factura va en ISP. La suma de todas las bases más sus cuotas (las bases con "sp" no aportan cuota), menos la retención, tiene que dar el total de la factura: si no te sale, revisa antes de responder. Incluye en "lin" TODAS las líneas de detalle que veas, con su cantidad y precio unitario; si el documento no las desglosa, devuelve "lin":[]. Ojo: si el emisor es '+(compCfg.name||'nuestra empresa')+(compCfg.cif?' (CIF '+compCfg.cif+')':'')+', la factura la emitimos nosotros y el interesado es el destinatario. ca de: Materiales|Mano de obra|Subcontrata|Servicios profesionales|Suministros|Seguros|Alquiler maquinaria|Gastos generales|Otros. Números punto decimal sin €. Vacío→"" o 0.' }
+          { type: 'text', text: 'Primero mira la ORIENTACIÓN de la imagen: en "rot" pon los grados (0, 90, 180 o 270) que habría que girarla en sentido horario para leer el texto derecho; si ya se lee derecha, "rot":0. Si "rot" no es 0 NO intentes leerla: devuelve "docs":[] y se volverá a enviar girada. Nunca inventes datos que no se lean con claridad: un campo dudoso va vacío. Si el documento contiene VARIAS facturas distintas (distinto nº o emisor), devuélvelas TODAS dentro del array "docs"; si solo hay una, el array tendrá un elemento. Responde SOLO este JSON: {"rot":0,"docs":[{"f":"fecha emisión YYYY-MM-DD","n":"nº factura","pr":"nombre EMISOR","pc":"CIF emisor","pd":"dirección emisor","cl":"nombre DESTINATARIO (cliente)","cc":"CIF destinatario","co":"concepto breve","ca":"categoría","imp":[{"b":base_imponible,"iv":pct_iva_de_esa_base,"c":cuota_de_iva_de_esa_base,"sp":true SOLO si ESA base concreta va en inversión del sujeto pasivo}],"ir":pct_irpf,"t":total_factura,"v":"vencimiento","ib":"IBAN del bloque de pago/domiciliación, transcrito CARÁCTER A CARÁCTER, solo letras y números sin espacios; los 2 dígitos tras ES son de CONTROL: no los deduzcas ni los corrijas. Si algún carácter no es claramente legible devuelve ib vacío — mejor vacío que inventado","sp":true si la factura indica INVERSION DEL SUJETO PASIVO (IVA no repercutido art.84; el total NO incluye IVA),"pf":true si el documento es PROFORMA o solicitud de pago previa (factura definitiva → false),"fp":"forma pago","ob":"obra/dirección envío","lin":[{"d":"descripción de la línea","q":cantidad,"pu":precio unitario sin IVA,"imp":importe de la línea sin IVA}]}]}. En "imp" pon UNA ENTRADA POR CADA BASE IMPONIBLE del resumen de impuestos: si la factura tiene bases a tipos distintos (por ejemplo 21% y 10%, o 21% y 4%), devuélvelas TODAS, no solo la mayor. Copia los importes del cuadro de totales, no los sumes ni los redondees. Los tipos posibles en España son 21, 10, 4 y 0 (exento). Si la factura MEZCLA una base con IVA normal y otra en inversión del sujeto pasivo (ISP, art. 84 — típico en obra), marca "sp":true SOLO en LA ENTRADA de esa base, con "iv":0 y "c":0, y NO actives el "sp" global, que se reserva para cuando TODA la factura va en ISP. La suma de todas las bases más sus cuotas (las bases con "sp" no aportan cuota), menos la retención, tiene que dar el total de la factura: si no te sale, revisa antes de responder. Incluye en "lin" TODAS las líneas de detalle que veas, con su cantidad y precio unitario; si el documento no las desglosa, devuelve "lin":[]. Ojo: si el emisor es '+(compCfg.name||'nuestra empresa')+(compCfg.cif?' (CIF '+compCfg.cif+')':'')+', la factura la emitimos nosotros y el interesado es el destinatario. ca de: Materiales|Mano de obra|Subcontrata|Servicios profesionales|Suministros|Seguros|Alquiler maquinaria|Gastos generales|Otros. Números punto decimal sin €. Vacío→"" o 0.' }
         ]}]
       })
     });
@@ -3526,7 +3541,7 @@ function App(){
       if (resp.status === 429 && !retried) {
         // Rate limit: esperar y reintentar una vez
         await new Promise(r => setTimeout(r, 3000));
-        return extractInvoiceData(file, true);
+        return extractInvoiceData(file, true, giro);
       }
       throw new Error(await errorIA(resp));
     }
@@ -3538,7 +3553,11 @@ function App(){
     if (!text) throw new Error('Documento ilegible');
 
     const p = parseJSONTolerante(text);
-    const _lista = listaLecturas(p);
+    // v397 · la IA dice si la página está girada: se reenvía girada UNA vez
+    const rotLeida = isImg ? giroValido(p && p.rot) : 0;
+    const soloRot = !!(p && !Array.isArray(p) && typeof p === 'object' && !Array.isArray(p.docs) && !Array.isArray(p.facturas) && p.rot !== undefined && Object.keys(p).every(k => k === 'rot' || k === 'docs'));
+    if (isImg && rotLeida && giro === undefined) return extractInvoiceData(file, retried, (giroAplicado + rotLeida) % 360);
+    const _lista = soloRot ? [] : listaLecturas(p);
     const _multi = _lista.length > 1;
     const _norm=(s)=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
     const _miNom=_norm(compCfg.name), _miCif=_norm(compCfg.cif);
@@ -3549,12 +3568,15 @@ function App(){
       return n.includes('BIOH');
     };
     const ctx = { inferISP, esNuestro, today, CATS, IVAS, IRPFS, normIban, reparaIban, normNif, parseNum };
-    if(!_lista.length) throw new Error('El lector no devolvió ninguna factura reconocible');
-    const base = mapearLectura(_lista[0], ctx);
+    if(!_lista.length) throw new Error(rotLeida ? 'La foto está girada y no se ha podido leer: gírala y vuelve a escanearla' : 'El lector no devolvió ninguna factura reconocible');
+    // v397 · saneado y avisos: lo improbable se marca para revisar, no se registra en silencio
+    const ctxAv = { today, miCif: compCfg.cif, miNombre: compCfg.name };
+    const conAvisos = (x) => { const m = saneaLectura(mapearLectura(x, ctx), ctxAv); return { ...m, _avisos: avisosLectura(m, ctxAv), _giro: giroAplicado }; };
+    const base = conAvisos(_lista[0]);
     return {
       ...base,
       _multi, _recuperado: !!(p && p._recuperado),
-      _lista: _lista.map(x => mapearLectura(x, ctx)),
+      _lista: _lista.map(conAvisos),
     };
   };
 
@@ -3836,13 +3858,15 @@ function App(){
         ibanProveedor: d.ibanProveedor || prev.ibanProveedor,
         obra: d.obra || prev.obra,
         _totalLeido: d._totalLeido || 0,
+        _avisos: d._avisos || [], _giro: d._giro || 0,
         isp: d.isp ?? prev.isp,
         proforma: d.proforma ?? prev.proforma,
         retencion: d.retencion ?? prev.retencion,
         _file: d._file || prev._file,
         lineas: (Array.isArray(d.lineas)&&d.lineas.length)?d.lineas:prev.lineas,
       }));
-      notify('Factura escaneada — revisa los datos');
+      if(d&&d._avisos&&d._avisos.length)notify('⚠️ Lectura dudosa: '+d._avisos.join(' · '),'error');
+      else notify('Factura escaneada — revisa los datos');
     } catch (e) {
       console.error('Scan error:', e);
       notify(e instanceof SyntaxError ? 'No se pudo interpretar — prueba con foto más nítida' : ('Error: ' + e.message), 'error');
@@ -3897,8 +3921,10 @@ function App(){
 
   // Registrar todas las facturas válidas del lote de golpe (sin revisión individual)
   const registerAllBatch = () => {if(soloLector())return;
-    const pend=batchFiles.filter(f=>f.status==='done'&&!f.registered);
-    if(!pend.length)return;
+    // v397 · las lecturas con avisos no entran de golpe: se revisan una a una
+    const dudosas=batchFiles.filter(f=>f.status==='done'&&!f.registered&&f.data&&Array.isArray(f.data._avisos)&&f.data._avisos.length);
+    const pend=batchFiles.filter(f=>f.status==='done'&&!f.registered&&!dudosas.includes(f));
+    if(!pend.length){if(dudosas.length)notify(`⚠️ ${dudosas.length} lectura${dudosas.length!==1?'s':''} dudosa${dudosas.length!==1?'s':''}: revísalas una a una`,'error');return;}
     const adjPares=[];
     const newInvs=pend.map(f=>{
       const d=f.data;const b=parseNum(d.importeBase)||0;
@@ -3917,7 +3943,8 @@ function App(){
       }
       if(!inv.fechaRegistro)inv.fechaRegistro=today;
       delete inv._pagoImport;delete inv._fechaEstimada;
-      adjPares.push([inv.id,(f.file||inv._file||null)]);delete inv._file;
+      adjPares.push([inv.id,(f.file||inv._file||null),inv._giro||0]);delete inv._file;
+      delete inv._giro;delete inv._avisos;delete inv._lista;delete inv._multi;delete inv._recuperado;
       delete inv._totalLeido;delete inv.refPresupuesto;delete inv._dualIva;if(!inv.base2){delete inv.base2;delete inv.tipoIva2;}
       return inv;
     });
@@ -3933,7 +3960,8 @@ function App(){
       else unicas.push(n);
     }
     setInvoices(p=>[...p,...unicas]);
-    setBatchFiles([]);setBatchReviewIdx(null);
+    setBatchFiles(dudosas.length?batchFiles.filter(f=>dudosas.includes(f)):[]);setBatchReviewIdx(null);
+    if(dudosas.length)notify(`⚠️ ${dudosas.length} lectura${dudosas.length!==1?'s':''} dudosa${dudosas.length!==1?'s':''} se queda${dudosas.length!==1?'n':''} en el lote para revisar`,'error');
     if(archivadas)notify(`📎 ${archivadas} documento${archivadas!==1?'s':''} archivado${archivadas!==1?'s':''} en facturas ya existentes`);
     notify(`${unicas.length} facturas registradas${omitidas?` · ${omitidas} omitida${omitidas!==1?'s':''} por estar ya registrada${omitidas!==1?'s':''}`:''}`);
     subirAdjuntos(adjPares);
@@ -5074,12 +5102,26 @@ function App(){
     }catch(e){ notify('No se pudo compartir','error'); }
   };
 
+  // v397 · una foto de móvil pesa 5 MB y se archivaba entera: 8 trozos por
+  // factura y subidas que se quedaban a medias (9 de 20 en el lote del 28/09
+  // llegaron sin foto). Se archiva a 2048 px y en JPEG, derecha si el lector
+  // tuvo que girarla. Los PDF y las imágenes pequeñas van tal cual.
+  const comprimirParaArchivo=async(file,giro)=>{
+    try{
+      if(!file||!/^image\//.test(file.type||'')||file.size<900*1024)return file;
+      const b=await downscaleImage(file,2048,0.85,{girar:giro||0});
+      if(!b||b.size>=file.size)return file;
+      const nombre=String(file.name||'foto').replace(/\.[^.]+$/,'')+'.jpg';
+      return new File([b],nombre,{type:'image/jpeg',lastModified:file.lastModified||Date.now()});
+    }catch(e){return file;}
+  };
   const subirAdjuntos=async(pares)=>{if(soloLector())return;
     const validos=(pares||[]).filter(p=>p&&p[1]);
     if(!ES_APP||!window.bh10Adj||!validos.length)return;
     let ok=0,pendientesNube=0;
-    for(const [id,file] of validos){
-      try{const path=await window.bh10Adj.subir(id,file);
+    for(const [id,file0,giro] of validos){
+      try{const file=await comprimirParaArchivo(file0,giro);
+        const path=await window.bh10Adj.subir(id,file);
         const nube=await confirmarNube(path);
         setInvoices(p=>p.map(i=>i.id===id?{...i,adjPath:path,adjNube:nube.ok}:i));ok++;
         if(!nube.ok)pendientesNube++;

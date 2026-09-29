@@ -10,11 +10,11 @@ const dom=new JSDOM('<!doctype html>',{url:'https://bh10group.com/app/'});
 globalThis.window=dom.window;globalThis.document=dom.window.document;
 window.__BH10_R=React;window.__BH10_JSX=JSXR;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
-const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV393.js');
+const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV397.js');
 const {resumen303,csv303,basesDe,parseNum}=I;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const invs=JSON.parse(datos.claves['bh10-fc-v3']);
 const anulada=i=>!!(i&&(i.anulada||i.esAnulada||i.estadoVf==='anulada'));
 const enQ=(i,q,y)=>{const d=new Date(i.fecha);return Math.floor(d.getMonth()/3)===q&&d.getFullYear()===y;};

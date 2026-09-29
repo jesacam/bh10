@@ -444,6 +444,8 @@ const ModalLoteEscaneo=({batchCancelRef,batchFiles,batchReviewIdx,batchTipo,lote
                 <div style={{fontSize:12,color:C.mt,marginBottom:10}}>
                   {processing?`Procesando ${current+1} de ${batchFiles.length}…`:`Terminado: ${done} legible${done!==1?'s':''}${errs?`, ${errs} con error`:''}`}
                 </div>
+                {(()=>{const dud=batchFiles.filter(f=>f.status==='done'&&Array.isArray(f.data?._avisos)&&f.data._avisos.length).length;
+                  return !processing&&dud>0?<div style={{background:C.wn+'18',border:`1px solid ${C.wn}55`,borderRadius:8,padding:'6px 8px',marginBottom:6,fontSize:10,color:C.wn}}>⚠️ {dud} lectura{dud!==1?'s':''} dudosa{dud!==1?'s':''} (foto girada, fecha rara o CIF equivocado): revísala{dud!==1?'s':''} una a una; «Registrar todas» la{dud!==1?'s':''} deja fuera.</div>:null;})()}
                 {processing&&<div style={{height:6,background:C.bg,borderRadius:3,marginBottom:10,overflow:'hidden'}}>
                   <div style={{height:'100%',width:`${(done+errs)/(batchFiles.length||1)*100}%`,background:C.vt,borderRadius:3,transition:'width .3s'}}/>
                 </div>}
@@ -456,6 +458,7 @@ const ModalLoteEscaneo=({batchCancelRef,batchFiles,batchReviewIdx,batchTipo,lote
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</div>
                         {f.status==='done'&&f.data?.proveedor&&<div style={{fontSize:10,color:C.sc}}>{f.data.proveedor}{f.data.importeBase?` · ${f.data.importeBase} € base`:''}</div>}
+                        {f.status==='done'&&Array.isArray(f.data?._avisos)&&f.data._avisos.length>0&&<div style={{fontSize:10,color:C.wn,fontWeight:700}}>⚠ Revisar: {f.data._avisos.join(' · ')}</div>}
                         {f.status==='error'&&<div style={{fontSize:10,color:C.dn}}>{f.error}</div>}
                       </div>
                     </div>
@@ -939,6 +942,7 @@ const ModalFormFactura=({CATS,Combobox,ES_APP,FORMAS,IRPFS,IVAS,IVA_LABELS,TIPOS
                 <span style={{fontWeight:700,color:batchTipo==='cobro'?C.sc:C.vt}}>{batchTipo==='cobro'?'📤':'📚'} Lote {batchTipo==='cobro'?'emitidas ':''}{batchPos}/{batchDone.length}</span>
                 {lotePagadas&&batchTipo!=='cobro'&&<span style={{fontSize:9,fontWeight:700,color:C.sc,marginLeft:6}}>✅ se registrarán como pagadas</span>}
                 <div style={{fontSize:10,color:C.mt,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{batchFiles[batchReviewIdx]?.name}</div>
+                {Array.isArray(form._avisos)&&form._avisos.length>0&&<div style={{fontSize:10,color:C.wn,fontWeight:700}}>⚠ Revisar: {form._avisos.join(' · ')}</div>}
               </div>
               <button style={{...S.sm(C.wn),flexShrink:0}} onClick={()=>advanceBatch(false)}>Omitir →</button>
             </div>

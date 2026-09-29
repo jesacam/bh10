@@ -17,7 +17,7 @@ import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 import {explicarDelta,PATRON_NUEVO,normAjustes,normNavegacion} from './_delta.mjs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=new Date('2026-08-24T11:00:00Z').getTime();
 const azarSembrado=(s)=>()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};
 
@@ -134,7 +134,7 @@ async function recorrer(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const RUTA_A=process.argv[2]||('../ref_produccion/'+REF);
-const RUTA_B=process.argv[3]||'../web_subir/app/assets/bh10-APPV393.js';
+const RUTA_B=process.argv[3]||'../web_subir/app/assets/bh10-APPV397.js';
 console.log('  A: '+RUTA_A+'\n  B: '+RUTA_B);
 // v369 (06-09-2026) · la previsión de tesorería tiene desde v348 un MOTOR
 // distinto al del bundle desplegado de referencia (presupuesto anual de

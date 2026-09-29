@@ -13,7 +13,7 @@ import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 import {explicarDelta,explicarRecorte,normAjustesTexto} from './_delta.mjs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=1756000000000;
 function azarSembrado(sem){let a=sem>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
@@ -154,7 +154,7 @@ async function ejecutar(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const A=await ejecutar(process.argv[2]||('../ref_produccion/'+REF));
-const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV393.js');
+const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 const tramo=(r,d,h)=>r.escrituras.slice(r.cortes[d],r.cortes[h]).map(([k,v])=>k+'='+v).join('\u0001');
 for(const [nom,d,h,min] of [['D1 baja de póliza','antesBaja','baja',1],['D2 restaurar (deshacer baja)','antesRestaura','restaura',1],['D3 póliza nueva','antesNuevaPol','nuevaPol',1],['D4 vehículo nuevo','antesVeh','veh',1],['D6 config VERI*FACTU','antesVf','vfcfg',0],['D5 deshacer global','antesDeshacer','deshacer',0]]){

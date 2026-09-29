@@ -5,7 +5,7 @@
 import fs from 'fs';
 import {fotoPagos,diffPagos,anotar,entradaRemesa,deFactura,deRemesa,csvDiario,lineaDiario,TOPE_DIARIO,fotoEntidades,diffEntidades,deColeccion} from '../src/diario.js';
 let n=0,mal=0;const ok=(c,t)=>{n++;if(!c){mal++;console.log('  ✗',t);}else console.log('  ✓',t);};
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const inv=JSON.parse(copia.claves['bh10-fc-v3']);
 const fiscal=(i)=>i&&!['anticipo','cobro','personal','presupuesto'].includes(i.tipo)&&!i.anulada;
 const pag=(i)=>(i.pagos||[]).reduce((s,p)=>s+(+p.importe||0),0);

@@ -10,7 +10,7 @@ dom.window.matchMedia=dom.window.matchMedia||(()=>({matches:false,addEventListen
 const React=(await import('react')).default;const {createRoot}=await import('react-dom/client');
 window.__BH10_R=React;window.__BH10_JSX=await import('react/jsx-runtime');
 window.__BH10_GTOKEN='tok';
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const nube={...copia.claves,'bh10-gmailid':'x.apps.googleusercontent.com'};
 window.storage={get:async k=>nube[k]!==undefined?{value:nube[k]}:null,set:async(k,v)=>{nube[k]=v;return{};},delete:async()=>({}),list:async()=>({keys:Object.keys(nube)}),getStatus:()=>({fase:'ok'})};
 const PDF=new Uint8Array([0x25,0x50,0x44,0x46,0x2d,0x31,0x2e,0x34,10,...Array(300).fill(65),0x25,0x25,0x45,0x4f,0x46]);
@@ -26,7 +26,7 @@ globalThis.fetch=async(url)=>{const u=String(url);const j=o=>({ok:true,status:20
   return j({});};
 window.bh10Adj={subir:async()=>'adj/x',enNube:async()=>({ok:true}),url:async()=>'https://x/y.pdf'};
 const errs=[];const oe=console.error;console.error=(...a)=>errs.push(String(a[0]).slice(0,200));
-const {default:App}=await import('/home/claude/fuente/web_subir/app/assets/bh10-APPV393.js');
+const {default:App}=await import('/home/claude/fuente/web_subir/app/assets/bh10-APPV397.js');
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const esp=ms=>new Promise(r=>setTimeout(r,ms));
 await esp(2500);

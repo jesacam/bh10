@@ -49,7 +49,7 @@ const esperas=[];const dormir=async(ms)=>{esperas.push(ms);};
 }
 
 // ── cuadre con datos reales (T2-2026) ─────────────────────────────────────
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const inv=JSON.parse(copia.claves['bh10-fc-v3']);
 const fiscal=(i)=>i&&!['anticipo','cobro','personal','presupuesto'].includes(i.tipo)&&!i.anulada;
 let recP=inv.filter(i=>fiscal(i)&&String(i.fecha||'')>='2026-04-01'&&String(i.fecha||'')<='2026-06-30');

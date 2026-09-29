@@ -5,7 +5,7 @@ import {irA} from './_nav.mjs';
 import {JSDOM} from 'jsdom';import React from 'react';import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';import fs from 'fs';
 import {explicarDelta,PATRON_NUEVO,normAjustes} from './_delta.mjs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=new Date('2026-08-24T11:00:00Z').getTime();
 const ESC=[
  {n:'DUEÑO', rol:'admin', permisos:null},
@@ -60,7 +60,7 @@ const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f))
 let fallos=0;
 for(const esc of ESC){
   const A=await pinta(process.argv[2]||('../ref_produccion/'+REF),esc);
-  const B=await pinta(process.argv[3]||'../web_subir/app/assets/bh10-APPV393.js',esc);
+  const B=await pinta(process.argv[3]||'../web_subir/app/assets/bh10-APPV397.js',esc);
   console.log('── '+esc.n);
   if(B.omitidas.length)console.log('  · pantallas que este perfil no ve (no se comparan):',B.omitidas.join(', '));
   for(const k of Object.keys(A.fotos)){if(B.omitidas.includes(k))continue;

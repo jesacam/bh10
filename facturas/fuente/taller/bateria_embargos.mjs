@@ -4,7 +4,7 @@
 //  T2 · con la nómina leída (335,53 €) → transferencia al juzgado, junto al resto
 //  T3 · tramos legales del art. 607 LEC
 import fs from 'fs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const emp=JSON.parse(datos.claves['bh10-employees']);
 const RINCON=emp.find(e=>String(e.nombre||'').includes('RINCON'));
 // las funciones puras no tocan window, pero el módulo entero sí al evaluarse
@@ -18,7 +18,7 @@ window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEven
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
 const A=(await import('../ref/bh10-REF313.js')).__internos;
-const B=(await import('../web_subir/app/assets/bh10-APPV393.js')).__internos;
+const B=(await import('../web_subir/app/assets/bh10-APPV397.js')).__internos;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 const J=x=>JSON.stringify(x);
 ok(!!A&&!!B&&typeof A.transferenciasEmbargo==='function','__internos disponible en ambos bundles');

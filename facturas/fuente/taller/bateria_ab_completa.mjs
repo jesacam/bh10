@@ -11,7 +11,7 @@ import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 import {explicarDelta,PATRON_NUEVO,normAjustesTexto} from './_delta.mjs';
-const d=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const d=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const CLAVES=['bh10-fc-v3','bh10-contratos','bh10-nominas','bh10-polizas','bh10-remesas','bh10-provcat','bh10-clicat','bh10-employees','bh10-company-v2','bh10-kpis','bh10-payroll-hist','bh10-budgets'];
 async function capturar(ruta){
   const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://bh10group.com/app/',pretendToBeVisual:true});
@@ -118,7 +118,7 @@ async function capturar(ruta){
   return fotos;
 }
 const A=await capturar((()=>{const R=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));if(!R)throw new Error('falta ref_produccion');return '../ref_produccion/'+R;})());
-const B=await capturar('../web_subir/app/assets/bh10-APPV393.js');
+const B=await capturar('../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0;
 for(const k of Object.keys(A)){
   if(A[k]===B[k]){console.log('  ✓',k.padEnd(10),'IDÉNTICO ·',A[k].length,'chars');continue;}

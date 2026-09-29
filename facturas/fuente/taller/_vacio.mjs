@@ -19,7 +19,7 @@ import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=new Date('2026-08-24T11:00:00Z').getTime();
 const azar=(s)=>()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};
 
@@ -76,7 +76,7 @@ async function vacio(ruta){
 }
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 const A=await vacio('../ref_produccion/'+REF);
-const B=await vacio('../web_subir/app/assets/bh10-APPV393.js');
+const B=await vacio('../web_subir/app/assets/bh10-APPV397.js');
 let f=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)f++;};
 const nv=t=>String(t).replace(/v3\d\d/g,'vXXX');
 ok(B.fotos.inicio.length>2000,'la app arranca con la nube VACÍA y pinta ('+B.fotos.inicio.length+' bytes)');

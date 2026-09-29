@@ -39,7 +39,7 @@ const entradasZip=(crudo)=>{
   return out;
 };
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=new Date('2026-08-24T11:00:00Z').getTime();
 
 async function correr(ruta){
@@ -304,7 +304,7 @@ async function correr(ruta){
 
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 const A=await correr('../ref_produccion/'+REF);
-const B=await correr(process.argv[2]||'../web_subir/app/assets/bh10-APPV393.js');
+const B=await correr(process.argv[2]||'../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0, cubiertos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // PENDIENTE: lo que la batería todavía no alcanza. Se imprime SIEMPRE y con su

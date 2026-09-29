@@ -13,7 +13,7 @@ import {componerContrato,nuevoDocVenta,nuevaFirma,huellaTexto,firmasCompletas,fi
 
 let n=0,mal=0;const ok=(c,t)=>{n++;if(!c){mal++;console.log('  ✗',t);}else console.log('  ✓',t);};
 
-const copia=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const copia=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const compCfg=JSON.parse(copia.claves['bh10-company-v2']||'{}');
 const obras=JSON.parse(copia.claves['bh10-obras']||'[]');
 const obra=conPapel(conPapel({...(obras[0]||{alias:'Promoción'})},'vende',true),'construye',true);

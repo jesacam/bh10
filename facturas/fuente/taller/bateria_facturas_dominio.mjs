@@ -16,7 +16,7 @@ import React from 'react';
 import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const FIJO=1756000000000;
 function azarSembrado(sem){let a=sem>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
@@ -174,7 +174,7 @@ async function ejecutar(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const A=await ejecutar(process.argv[2]||('../ref_produccion/'+REF));
-const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV393.js');
+const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // v359 · fuera del byte a byte: el latido de sesión (bh10-sesiones, periódico: con el pre-vuelo
 // en paralelo cae en un tramo u otro según la carga) y el diario permanente (bh10-diario, nuevo)

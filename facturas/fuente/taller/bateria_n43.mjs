@@ -14,7 +14,7 @@ import * as JSXR from 'react/jsx-runtime';
 import {createRoot} from 'react-dom/client';
 import fs from 'fs';
 
-const datos=JSON.parse(fs.readFileSync('/home/claude/copia/BH10_copia_completa_2026-09-06.json','utf8'));
+const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const cual=fs.readdirSync('/mnt/user-data/uploads').find(f=>/^C43_.*\.txt$/i.test(f));
 if(!cual){console.log('✗ falta el extracto: se espera un C43_*.txt en /mnt/user-data/uploads');process.exit(1);}
 const CRUDO=fs.readFileSync('/mnt/user-data/uploads/'+cual);
@@ -88,7 +88,7 @@ async function circuito(ruta){
 
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 const A=await circuito(process.argv[2]||('../ref_produccion/'+REF));
-const B=await circuito(process.argv[3]||'../web_subir/app/assets/bh10-APPV393.js');
+const B=await circuito(process.argv[3]||'../web_subir/app/assets/bh10-APPV397.js');
 let fallos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 const nv=t=>String(t).replace(/v3\d\d/g,'vXXX');
