@@ -1,0 +1,22 @@
+name = "bh10-buzon"
+main = "src/index.js"
+compatibility_date = "2026-09-11"
+
+# Buzón de correo: cada mañana a las 08:00 (hora peninsular) recoge las facturas
+# que llegan por Gmail y las deja en el buzón de la app, pendientes de revisar.
+[triggers]
+crons = ["0 6 * * *"]
+
+# Secretos (wrangler secret put o panel de Cloudflare):
+#   SA_JSON              cuenta de servicio de Firebase
+#   GMAIL_CLIENT_SECRET  secreto del cliente OAuth de la app (Google Cloud → Credenciales)
+[vars]
+FIREBASE_PROJECT = "b10h-facturas"
+EMPRESA_UID = "IyiCwXCLJ9Nmcgrn4faLsQSKTcI3"
+DUENO_UID = "IyiCwXCLJ9Nmcgrn4faLsQSKTcI3"
+GMAIL_CLIENT_ID = "1075389182399-lgeqgnhbvj4okk7gj67iecbeji1255ku.apps.googleusercontent.com"
+CUENTA = "greenbighouse@gmail.com"
+DIAS_ATRAS = "3"
+MAX_BYTES = "700000"
+# remitentes habituales (parte del correo o del nombre, sin distinguir mayúsculas); separados por comas
+REMITENTES = "aqualia,naturgy,grugar,jmcpool,durma,digi,leroymerlin,tecnytran,dalpes,pinturasmax,iberdrola,endesa,repsol,ballenoil,wurth,hormigones,cemento"
