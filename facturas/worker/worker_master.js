@@ -1,4 +1,4 @@
-// ═══ BH10 · WORKER MASTER v368 ══════════════════════════════════════════════
+// ═══ BH10 · WORKER MASTER v399 ══════════════════════════════════════════════
 // Sustituye al Worker Master anterior. Pegar en Cloudflare → Workers → (tu
 // worker master) → Editar código. Secretos (Settings → Variables → Secrets):
 //   FIREBASE_PROJECT   b10h-facturas
@@ -18,6 +18,18 @@
 //     con su propio token, que las reglas le dejan leer). Límite de 60 llamadas por
 //     minuto y uid.
 //   · /ip sigue siendo público (solo devuelve la IP: lo usa la lista de sesiones).
+//
+// v399 (29-09-2026, punto 6 del plan de arquitectura): la validación y el registro
+// de las lecturas de IA viven aquí, no solo en el navegador:
+//   · /ia solo acepta peticiones bien formadas (modelo claude-*, messages, tope de
+//     max_tokens) — una cuenta de miembro comprometida no puede usar la clave para
+//     otra cosa.
+//   · cada respuesta se examina: si era una lectura de factura («docs»), se comprueba
+//     que el JSON es válido y cuántos documentos trae; el veredicto vuelve en la
+//     cabecera X-Bh10-Lectura (ok:N · json-invalido · truncado · error:CODIGO).
+//   · el uso (llamadas, tokens de entrada/salida, milisegundos, errores, lecturas
+//     mal formadas) se acumula por mes, día y usuario en
+//     empresas/{dueño}/privado/iaUso-AAAA-MM (solo el dueño lo lee; /iaUso lo devuelve).
 
 const CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 const ANTHROPIC = 'https://api.anthropic.com/v1/messages';
@@ -26,6 +38,7 @@ const cors = (origen) => ({
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Bh10-Clave',
   'Access-Control-Max-Age': '600',
+  'Access-Control-Expose-Headers': 'X-Bh10-Lectura',
 });
 const json = (obj, status, origen) => new Response(JSON.stringify(obj), { status: status || 200, headers: { 'Content-Type': 'application/json', ...cors(origen) } });
 
@@ -91,13 +104,13 @@ const DUENOS = (env) => String(env.DUENO_UID || '').split(',').map(s => s.trim()
 const esDueno = (uid, env) => !!uid && DUENOS(env).includes(uid);
 // ¿es el dueño, o un miembro activo? (lee su ficha con su propio token; las reglas se lo permiten)
 async function miembroActivo(quien, env) {
-  if (esDueno(quien.uid, env)) return { dueno: true };
+  if (esDueno(quien.uid, env)) return { dueno: true, empresa: quien.uid };
   const r = await fetch(`https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT}/databases/(default)/documents/miembros/${quien.uid}`, { headers: { Authorization: 'Bearer ' + quien.token } });
   if (!r.ok) return null;
   const d = await r.json(); const f = (d && d.fields) || {};
   const estado = f.estado && f.estado.stringValue; const dueno = f.dueno && f.dueno.stringValue;
   if (estado !== 'activo' || !esDueno(dueno, env)) return null;
-  return { dueno: false };
+  return { dueno: false, empresa: dueno };
 }
 
 // ── límite de llamadas a la IA por uid ─────────────────────────────────────
@@ -122,8 +135,51 @@ async function tokenAdmin(env) {
 }
 const IDENTITY = 'https://identitytoolkit.googleapis.com/v1';
 
+// ── v399 · validación de la petición y veredicto de la respuesta de IA ──────
+const MAX_TOKENS_IA = 16384;
+function peticionIaValida(pet) {
+  if (!pet || typeof pet !== 'object') return 'cuerpo no es JSON';
+  if (!/^claude-[a-z0-9.-]+$/i.test(String(pet.model || ''))) return 'modelo no permitido';
+  if (!Array.isArray(pet.messages) || !pet.messages.length) return 'sin messages';
+  if (pet.max_tokens !== undefined && !(+pet.max_tokens > 0 && +pet.max_tokens <= MAX_TOKENS_IA)) return 'max_tokens fuera de rango';
+  return '';
+}
+const textoDe = (c) => Array.isArray(c) ? c.map(x => (x && typeof x === 'object' && typeof x.text === 'string') ? x.text : '').join('\n') : String(c || '');
+const esLecturaFactura = (pet) => (pet.messages || []).some(m => /"docs"\s*:\s*\[/.test(textoDe(m && m.content)));
+// Devuelve el veredicto que viaja en X-Bh10-Lectura y los datos de uso.
+function examinarRespuesta(pet, texto, status) {
+  const out = { veredicto: 'n/a', entrada: 0, salida: 0, docs: 0, modelo: String(pet.model || '') };
+  if (status !== 200) { out.veredicto = 'error:' + status; return out; }
+  let r = null; try { r = JSON.parse(texto); } catch { out.veredicto = 'respuesta-no-json'; return out; }
+  out.entrada = +(r.usage && r.usage.input_tokens) || 0; out.salida = +(r.usage && r.usage.output_tokens) || 0;
+  if (!esLecturaFactura(pet)) return out;
+  if (r.stop_reason === 'max_tokens') { out.veredicto = 'truncado'; return out; }
+  let s = textoDe(r.content).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const a = s.indexOf('{'), b = s.lastIndexOf('}'); if (a > 0 && b > a) s = s.slice(a, b + 1);
+  let j = null; try { j = JSON.parse(s); } catch { out.veredicto = 'json-invalido'; return out; }
+  if (!j || !Array.isArray(j.docs)) { out.veredicto = 'sin-docs'; return out; }
+  out.docs = j.docs.length; out.veredicto = 'ok:' + j.docs.length + (j.rot ? ',rot:' + j.rot : '');
+  return out;
+}
+// Acumula el uso por mes, día y usuario (transformaciones atómicas: sin leer antes).
+async function registrarUso(env, empresa, uid, ex, ms) {
+  if (!empresa || !env.SERVICE_ACCOUNT) return;
+  const hoy = new Date(); const mes = hoy.toISOString().slice(0, 7), dia = hoy.toISOString().slice(8, 10);
+  const doc = `projects/${env.FIREBASE_PROJECT}/databases/(default)/documents/empresas/${empresa}/privado/iaUso-${mes}`;
+  const err = /^error|no-json|invalido|truncado|sin-docs/.test(ex.veredicto) ? 1 : 0;
+  const inc = (n) => ({ increment: { integerValue: String(n) } });
+  const fila = (pre) => [
+    { fieldPath: pre + 'llamadas', ...inc(1) }, { fieldPath: pre + 'entrada', ...inc(ex.entrada) }, { fieldPath: pre + 'salida', ...inc(ex.salida) },
+    { fieldPath: pre + 'ms', ...inc(ms) }, { fieldPath: pre + 'errores', ...inc(err) }, { fieldPath: pre + 'docs', ...inc(ex.docs) },
+  ];
+  const write = { update: { name: doc, fields: { mes: { stringValue: mes }, actualizado: { integerValue: String(Date.now()) } } }, updateMask: { fieldPaths: ['mes', 'actualizado'] },
+    updateTransforms: [...fila(''), ...fila('dias.`' + dia + '`.'), ...fila('usuarios.`' + uid + '`.'), { fieldPath: 'modelos.`' + ex.modelo.replace(/[^a-z0-9-]/gi, '_') + '`', ...inc(1) }] };
+  const t = await tokenAdmin(env);
+  await fetch(`https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT}/databases/(default)/documents:commit`, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [write] }) });
+}
+
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url); const origen = req.headers.get('Origin') || '';
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origen) });
     if (url.pathname.endsWith('/ip')) return json({ ip: req.headers.get('CF-Connecting-IP') || '' }, 200, origen);
@@ -148,13 +204,30 @@ export default {
       if (!env.ANTHROPIC_KEY) return json({ error: 'el Worker no tiene ANTHROPIC_KEY' }, 500, origen);
       const cuerpo = await req.text();
       if (cuerpo.length > 25 * 1024 * 1024) return json({ error: 'petición demasiado grande' }, 413, origen);
+      let pet = null; try { pet = JSON.parse(cuerpo); } catch {}
+      const mal = peticionIaValida(pet); if (mal) return json({ error: 'petición de IA no válida: ' + mal }, 400, origen);
+      const t0 = Date.now();
       const r = await fetch(ANTHROPIC, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' }, body: cuerpo });
-      return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json', ...cors(origen) } });
+      const texto = await r.text(); const ms = Date.now() - t0;
+      const ex = examinarRespuesta(pet, texto, r.status);
+      if (ctx && ctx.waitUntil) ctx.waitUntil(registrarUso(env, m.empresa, quien.uid, ex, ms).catch(() => {}));
+      return new Response(texto, { status: r.status, headers: { 'Content-Type': 'application/json', 'X-Bh10-Lectura': ex.veredicto, ...cors(origen) } });
     }
 
     // lo demás: solo el dueño
     if (!claveVieja && (!quien || !esDueno(quien.uid, env))) return json({ error: 'solo el dueño' }, 403, origen);
     let cuerpo = {}; try { cuerpo = await req.json(); } catch {}
+
+    // v399 · uso de la IA del mes (o del mes ?mes=AAAA-MM), acumulado por el propio Worker
+    if (url.pathname.endsWith('/iaUso')) {
+      if (!quien) return json({ error: 'exige sesión' }, 401, origen);
+      const mes = /^\d{4}-\d{2}$/.test(url.searchParams.get('mes') || '') ? url.searchParams.get('mes') : new Date().toISOString().slice(0, 7);
+      const r = await fetch(`https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT}/databases/(default)/documents/empresas/${quien.uid}/privado/iaUso-${mes}`, { headers: { Authorization: 'Bearer ' + quien.token } });
+      if (r.status === 404) return json({ mes, llamadas: 0 }, 200, origen);
+      const d = await r.json(); if (!r.ok) return json({ error: (d.error && d.error.message) || 'no se pudo leer' }, 400, origen);
+      const plano = (v) => { if (v == null) return null; if (v.integerValue !== undefined) return +v.integerValue; if (v.stringValue !== undefined) return v.stringValue; if (v.mapValue) return Object.fromEntries(Object.entries(v.mapValue.fields || {}).map(([k, x]) => [k, plano(x)])); return null; };
+      return json(Object.fromEntries(Object.entries(d.fields || {}).map(([k, x]) => [k, plano(x)])), 200, origen);
+    }
     if (url.pathname.endsWith('/crearUsuario')) {
       const email = String(cuerpo.email || '').trim().toLowerCase(); const clave = String(cuerpo.clave || '');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || clave.length < 8) return json({ error: 'email o contraseña no válidos' }, 400, origen);
