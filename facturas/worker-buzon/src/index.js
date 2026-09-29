@@ -7,7 +7,8 @@
 //
 // Rutas:
 //   GET /autorizar   → consentimiento de Google (una sola vez, con la cuenta de la empresa)
-//   GET /callback    → guarda el permiso (refresh token) en Firestore (empresas/{uid}/privado/gmail)
+//   GET|POST /callback → guarda el permiso (refresh token) en Firestore (empresas/{uid}/privado/gmail)
+//   (el POST llega desde bh10group.com/app/buzon-gmail.html, sin URI de redirección)
 //   GET /ahora       → recoge ahora mismo (exige sesión de Firebase del dueño: Authorization: Bearer …)
 //   GET /estado      → último resultado (misma exigencia)
 
@@ -132,16 +133,32 @@ export default {
       Object.entries({ client_id: env.GMAIL_CLIENT_ID, redirect_uri: redirect(req), response_type: 'code', scope: 'https://www.googleapis.com/auth/gmail.readonly', access_type: 'offline', prompt: 'consent', login_hint: env.CUENTA, include_granted_scopes: 'false' }).forEach(([k, v]) => u.searchParams.set(k, v));
       return Response.redirect(u.toString(), 302);
     }
+    // v2 · dos caminos para el consentimiento: GET (redirección clásica, exige la URI
+    // /callback dada de alta en el cliente OAuth) y POST desde la página
+    // bh10group.com/app/buzon-gmail.html (ventana emergente de Google Identity
+    // Services: el código se canjea con redirect_uri «postmessage» y NO hace falta
+    // tocar el cliente OAuth, porque bh10group.com ya es origen autorizado).
     if (ruta.endsWith('/callback')) {
-      const code = url.searchParams.get('code'); if (!code) return html('<h2>Falta el código de Google</h2>', 400);
-      if (!env.GMAIL_CLIENT_SECRET) return html('<h2>Falta el secreto GMAIL_CLIENT_SECRET en el Worker</h2><p>Añádelo en Cloudflare → Workers & Pages → bh10-buzon → Settings → Variables and Secrets y vuelve a /autorizar.</p>', 500);
-      const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code, client_id: env.GMAIL_CLIENT_ID, client_secret: env.GMAIL_CLIENT_SECRET, redirect_uri: redirect(req), grant_type: 'authorization_code' }) });
+      const origen = req.headers.get('Origin') || '';
+      const corsOk = /^https:\/\/([a-z0-9-]+\.)?bh10group\.com$/.test(origen);
+      const cors = corsOk ? { 'Access-Control-Allow-Origin': origen, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } : {};
+      if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+      const porPost = req.method === 'POST';
+      let code = url.searchParams.get('code');
+      if (porPost) { if (!corsOk) return json({ error: 'origen no permitido' }, 403); try { code = String((await req.json()).code || ''); } catch { code = ''; } }
+      const responder = (obj, status) => porPost ? new Response(JSON.stringify(obj), { status: status || 200, headers: { 'Content-Type': 'application/json', ...cors } })
+        : html(obj.error ? '<h2>' + obj.error + '</h2>' + (obj.detalle ? '<pre>' + String(obj.detalle).replace(/</g, '&lt;') + '</pre>' : '') : '<h2>✅ Buzón de correo autorizado</h2><p>Cuenta: <b>' + obj.cuenta + '</b>. Cada mañana a las 08:00 se recogerán las facturas nuevas y aparecerán en el buzón de la app. Puedes cerrar esta pestaña.</p>', status || 200);
+      if (!code) return responder({ error: 'Falta el código de Google' }, 400);
+      if (!env.GMAIL_CLIENT_SECRET) return responder({ error: 'Falta el secreto GMAIL_CLIENT_SECRET en el Worker (Cloudflare → Workers & Pages → bh10-buzon → Settings → Variables and Secrets)' }, 500);
+      const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code, client_id: env.GMAIL_CLIENT_ID, client_secret: env.GMAIL_CLIENT_SECRET, redirect_uri: porPost ? 'postmessage' : redirect(req), grant_type: 'authorization_code' }) });
       const d = await r.json();
-      if (!d.refresh_token) return html('<h2>Google no ha devuelto permiso permanente</h2><pre>' + JSON.stringify(d, null, 1).replace(/</g, '&lt;') + '</pre><p>Vuelve a /autorizar y acepta todo.</p>', 500);
+      if (!d.refresh_token) return responder({ error: 'Google no ha devuelto permiso permanente: vuelve a autorizar y acepta todo', detalle: JSON.stringify(d).slice(0, 300) }, 500);
+      // Solo la cuenta de la empresa: nadie puede colgar su Gmail en nuestro buzón
+      let cuenta = ''; try { const me = await (await fetch(`${GM}/profile`, { headers: { Authorization: 'Bearer ' + d.access_token } })).json(); cuenta = String(me.emailAddress || '').toLowerCase(); } catch {}
+      if (cuenta !== String(env.CUENTA || '').toLowerCase()) return responder({ error: 'La cuenta autorizada (' + (cuenta || 'desconocida') + ') no es la de la empresa (' + env.CUENTA + '). No se ha guardado nada.' }, 403);
       const tok = await tokenSA(env);
-      let cuenta = env.CUENTA; try { const me = await (await fetch(`${GM}/profile`, { headers: { Authorization: 'Bearer ' + d.access_token } })).json(); if (me.emailAddress) cuenta = me.emailAddress; } catch {}
-      await fsSet(env, tok, `empresas/${env.EMPRESA_UID}/privado/gmail`, { refresh_token: d.refresh_token, cuenta, autorizadoEn: new Date().toISOString(), scope: d.scope || '' });
-      return html('<h2>✅ Buzón de correo autorizado</h2><p>Cuenta: <b>' + cuenta + '</b>. Cada mañana a las 08:00 se recogerán las facturas nuevas y aparecerán en el buzón de la app. Puedes cerrar esta pestaña.</p>');
+      await fsSet(env, tok, `empresas/${env.EMPRESA_UID}/privado/gmail`, { refresh_token: d.refresh_token, cuenta, autorizadoEn: new Date().toISOString(), scope: d.scope || '', via: porPost ? 'popup' : 'redirect' });
+      return responder({ ok: true, cuenta });
     }
     if (ruta.endsWith('/ahora') || ruta.endsWith('/estado')) {
       if (!(await esDueno(req, env))) return json({ error: 'solo el dueño, con sesión de Firebase' }, 401);

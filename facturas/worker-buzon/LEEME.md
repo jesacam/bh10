@@ -13,7 +13,9 @@ un proveedor por el portal.
 2. Cloudflare → Workers & Pages → bh10-buzon → Settings → Variables and Secrets:
    - `SA_JSON` (cuenta de servicio de Firebase, ya puesto)
    - `GMAIL_CLIENT_SECRET` (secreto del cliente OAuth)
-3. Abrir `https://bh10-buzon.jesacam.workers.dev/autorizar` con la cuenta
+3. Abrir `https://bh10group.com/app/buzon-gmail` (ventana emergente de Google, sin
+   tocar el cliente OAuth) o, si se prefiere la redirección clásica,
+   `https://bh10-buzon.jesacam.workers.dev/autorizar` con la cuenta
    `greenbighouse@gmail.com` y aceptar. El refresh token se guarda en
    `empresas/{uid}/privado/gmail`.
 
