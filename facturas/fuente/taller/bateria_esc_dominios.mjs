@@ -154,7 +154,7 @@ async function ejecutar(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const A=await ejecutar(process.argv[2]||('../ref_produccion/'+REF));
-const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV397.js');
+const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV398.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 const tramo=(r,d,h)=>r.escrituras.slice(r.cortes[d],r.cortes[h]).map(([k,v])=>k+'='+v).join('\u0001');
 for(const [nom,d,h,min] of [['D1 baja de póliza','antesBaja','baja',1],['D2 restaurar (deshacer baja)','antesRestaura','restaura',1],['D3 póliza nueva','antesNuevaPol','nuevaPol',1],['D4 vehículo nuevo','antesVeh','veh',1],['D6 config VERI*FACTU','antesVf','vfcfg',0],['D5 deshacer global','antesDeshacer','deshacer',0]]){

@@ -17,7 +17,7 @@ import {getAuth,setPersistence,browserLocalPersistence,onAuthStateChanged,
         signInWithEmailAndPassword,signOut} from 'firebase/auth';
 import {initializeFirestore,persistentLocalCache,persistentSingleTabManager,
         doc,collection,getDoc,getDocs,setDoc,addDoc,deleteDoc,onSnapshot,
-        query,where,orderBy,serverTimestamp} from 'firebase/firestore';
+        query,where,orderBy,serverTimestamp,runTransaction} from 'firebase/firestore';
 
 // ── puentes con los nombres del minificado (se renombrarán por fases) ──
 const Io=ReactNS, dt=JSXNS, fne=RDOMNS;
@@ -147,6 +147,7 @@ var idSesion = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
         collection: (t, ...e) => pa(t, ...e),
         setDoc: Ni,
         getDoc: Qa,
+        runTransaction: runTransaction,
         deleteDoc: ql,
         onSnapshot: oU,
         snapshotDocs: t => t.docChanges().map(e => ({
@@ -155,13 +156,22 @@ var idSesion = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
             removed: e.type === "removed"
         }))
     },
+    // v398 · claves con control de versión al guardar (las listas que duele perder)
     NDe = {
         "bh10-fc-v3": 1,
         "bh10-contratos": 1,
         "bh10-employees": 1,
         "bh10-provcat": 1,
+        "bh10-clicat": 1,
         "bh10-nominas": 1,
-        "bh10-remesas": 1
+        "bh10-remesas": 1,
+        "bh10-diario": 1,
+        "bh10-polizas": 1,
+        "bh10-obras": 1,
+        "bh10-viviendas": 1,
+        "bh10-vfregistros": 1,
+        "bh10-traspasos": 1,
+        "bh10-payroll-hist": 1
     },
     LI = 9e5,
     kDe = 15e4,
@@ -194,6 +204,10 @@ var idSesion = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
             l = i ? [e, "sub", i] : [e],
             c = "bh10ls:" + e + ":" + i + ":",
             f = "bh10lsu:" + e + ":" + i + ":",
+            // v398 · versión de la nube que la app tiene DE VERDAD en memoria (la última que leyó con get
+            // o escribió ella misma). El aviso de conflicto se decide contra esto, no contra la marca
+            // de la última escritura, que el propio sincronizador adelantaba al recibir datos ajenos.
+            x = "bh10lsx:" + e + ":" + i + ":",
             g = () => t.collection(t.db, "empresas", ...l, "kv"),
             h = T => t.doc(t.db, "empresas", ...l, "kv", T),
             S = {
@@ -209,28 +223,12 @@ var idSesion = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
             },
             _ = [],
             I = async (T, C, N, z) => {
-                if (NDe[T]) {
-                    let R = typeof z == "number" ? z : +(localStorage.getItem(f + T) || 0);
-                    try {
-                        let M = await t.getDoc(h(T));
-                        if (M && M.exists && M.exists()) {
-                            let U = M.data() || {};
-                            if (U.u && U.dev !== n && U.u > R + 1500) {
-                                S.conflicto = {
-                                    key: T,
-                                    remoto: U.u,
-                                    mio: R
-                                };
-                                try {
-                                    localStorage.setItem(f + T, String(R))
-                                } catch {}
-                                throw w("conflicto", "otro dispositivo tiene datos más recientes"), new Error("CONFLICTO: la nube tiene datos más nuevos de otro dispositivo")
-                            }
-                        }
-                    } catch (M) {
-                        if (String(M.message || "").startsWith("CONFLICTO")) throw M
-                    }
-                }
+                // v398 · Jesús (29-09-2026): «sigo viendo la de los toldos». Un aparato abierto con datos
+                // viejos volvía a subirlos enteros y pisaba lo que otro había guardado: el sincronizador
+                // guardaba lo nuevo en el almacén local y adelantaba la marca de versión, pero la app
+                // seguía con lo viejo en memoria y el aviso de conflicto no saltaba. Ahora la escritura
+                // es una transacción que compara la versión que la app tiene en memoria (x) con la de
+                // la nube: si otro aparato guardó después, NO se escribe y se avisa.
                 let D = C,
                     F = 0;
                 if (C.length > kDe && DDe()) try {
@@ -238,27 +236,39 @@ var idSesion = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
                 } catch {
                     D = C, F = 0
                 }
-                if (D.length <= LI) await t.setDoc(h(T), {
-                    v: D,
-                    z: F,
-                    p: 0,
-                    u: N,
-                    dev: n
-                });
-                else {
-                    let R = Math.ceil(D.length / LI);
-                    for (let M = 0; M < R; M++) await t.setDoc(h(T + "~" + M), {
-                        v: D.slice(M * LI, (M + 1) * LI),
-                        u: N,
-                        dev: n
-                    });
-                    await t.setDoc(h(T), {
-                        p: R,
-                        z: F,
-                        u: N,
-                        dev: n
+                let V = +(localStorage.getItem(x + T) || 0),
+                    R = typeof z == "number" ? z : +(localStorage.getItem(f + T) || 0),
+                    escribir = tx => {
+                        if (D.length <= LI) tx.set(h(T), { v: D, z: F, p: 0, u: N, dev: n });
+                        else {
+                            let P = Math.ceil(D.length / LI);
+                            for (let M = 0; M < P; M++) tx.set(h(T + "~" + M), { v: D.slice(M * LI, (M + 1) * LI), u: N, dev: n });
+                            tx.set(h(T), { p: P, z: F, u: N, dev: n })
+                        }
+                    };
+                if (NDe[T] && t.runTransaction) {
+                    await t.runTransaction(t.db, async tx => {
+                        let M = await tx.get(h(T));
+                        if (M && M.exists && M.exists()) {
+                            let U = M.data() || {};
+                            // otro aparato guardó una versión que esta app no ha cargado
+                            if (U.u && U.dev !== n && ((V && U.u > V) || (!V && U.u > R + 1500))) {
+                                S.conflicto = { key: T, remoto: U.u, mio: V || R };
+                                try { localStorage.setItem(f + T, String(R)) } catch {}
+                                throw w("conflicto", "otro dispositivo tiene datos más recientes"), new Error("CONFLICTO: la nube tiene datos más nuevos de otro dispositivo")
+                            }
+                        }
+                        escribir(tx)
                     })
+                } else {
+                    if (D.length <= LI) await t.setDoc(h(T), { v: D, z: F, p: 0, u: N, dev: n });
+                    else {
+                        let P = Math.ceil(D.length / LI);
+                        for (let M = 0; M < P; M++) await t.setDoc(h(T + "~" + M), { v: D.slice(M * LI, (M + 1) * LI), u: N, dev: n });
+                        await t.setDoc(h(T), { p: P, z: F, u: N, dev: n })
+                    }
                 }
+                try { localStorage.setItem(x + T, String(N)) } catch {}
             }, k = async (T, C) => {
                 let N;
                 if (C && +C.p > 0) {
@@ -281,6 +291,8 @@ var idSesion = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
             async get(T) {
                 let C = localStorage.getItem(c + T);
                 if (C === null) throw new Error("Key not found: " + T);
+                // v398 · lo que la app lee es lo que tiene en memoria: esa es la versión contra la que se compara al guardar
+                try { localStorage.setItem(x + T, localStorage.getItem(f + T) || "0") } catch {}
                 return {
                     key: T,
                     value: C
@@ -1403,10 +1415,11 @@ function Raiz() {
                 try {
                     let C = "bh10ls:" + t.uid + ":" + (c || "") + ":",
                         N = "bh10lsu:" + t.uid + ":" + (c || "") + ":",
+                        X = "bh10lsx:" + t.uid + ":" + (c || "") + ":",
                         z = [];
                     for (let D = 0; D < localStorage.length; D++) {
                         let F = localStorage.key(D);
-                        F && (F.startsWith(C) || F.startsWith(N)) && z.push(F)
+                        F && (F.startsWith(C) || F.startsWith(N) || F.startsWith(X)) && z.push(F)
                     }
                     z.forEach(D => localStorage.removeItem(D))
                 } catch {}

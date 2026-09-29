@@ -88,7 +88,7 @@ window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,
   getStatus:()=>({fase:'ok',error:'',ultimaEscritura:FIJO,errorEscritura:'',pendientes:0,conflicto:null})};
 
 const oe=console.error;console.error=()=>{};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV398.js');
 const E=ms=>new Promise(x=>setTimeout(x,ms));
 let fallos=0;
 const ok=(c,m)=>{oe((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};

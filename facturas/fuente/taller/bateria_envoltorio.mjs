@@ -29,7 +29,7 @@ async function arrancar(ruta){
   return {error,texto,ventanas:ventanas.join(' '),insigniaOculta:estilos.includes('grecaptcha-badge'),dom};
 }
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
-const N=await arrancar('../web_subir/app/assets/index-v316.js');
+const N=await arrancar('../web_subir/app/assets/index-v317.js');
 ok(!N.error,'v315 arranca sin excepción'+(N.error?' → '+N.error.message:''));
 ok(/Correo|contraseña|Entrar|acceso restringido/i.test(N.texto),'v315 pinta la pantalla de LOGIN');
 ok(N.texto.includes('Protegido por reCAPTCHA'),'v315 muestra la atribución de reCAPTCHA');
@@ -44,7 +44,7 @@ ok(N.ventanas===V.ventanas,'mismas ventanas globales expuestas');
 // blobDe que ya no concatena trozos ausentes. bh10Adj solo existe tras el
 // login, así que aquí se comprueba que el bundle compilado lo lleva y que
 // la superficie pre-login no ha cambiado (arriba).
-const fuente=fs.readFileSync(new URL('../web_subir/app/assets/index-v316.js',import.meta.url),'utf8');
+const fuente=fs.readFileSync(new URL('../web_subir/app/assets/index-v317.js',import.meta.url),'utf8');
 ok(/enNube:\s*async/.test(fuente),'v316 lleva bh10Adj.enNube');
 ok(fuente.includes('hasPendingWrites'),'enNube pregunta a Firestore por escrituras pendientes (caché local ≠ nube)');
 ok(fuente.includes('falta el trozo')&&fuente.includes('pendiente de subir'),'enNube distingue trozo ausente de trozo en cola');

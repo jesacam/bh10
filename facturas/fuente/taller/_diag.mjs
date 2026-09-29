@@ -15,7 +15,7 @@ window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.BH10_EMPRESA={sub:'',nombre:'BIG HOUSE 2010'};window.BH10_ROL='admin';window.BH10_PERMISOS=null;
 const nube={};for(const k of Object.keys(datos.claves))nube[k]=datos.claves[k];
 window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV398.js');
 const errores=[];
 console.error=(...a)=>{errores.push(a.map(String).join(' ').slice(0,600));};
 createRoot(document.getElementById('root')).render(React.createElement(App));

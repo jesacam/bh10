@@ -1518,6 +1518,9 @@ function App(){
   const ctLecturaMal  = useRef(false);
   const batchCancelRef = useRef(false);
   const difFacturas = useRef(crearGuardadoDiferido('bh10-fc-v3',700));
+  // v398 · datos que llegan de otro aparato: se aplican en pantalla si no hay nada a medio editar; si lo hay, se avisa
+  const [avisoRemoto,setAvisoRemoto]=useState(null);
+  const edicionAbiertaRef=useRef(false);
   // v360 · el generador de QR se carga al arrancar para que el sello VERI*FACTU del PDF salga en síncrono
   useEffect(()=>{vfCargarQR();},[]);
   // ── DIARIO PERMANENTE DE PAGOS (v359) ────────────────────────────────────
@@ -1812,6 +1815,26 @@ function App(){
     notify('↪️ Rehecho: '+paso.desc);
   };
 
+  useEffect(()=>{edicionAbiertaRef.current=!!(showForm||(batchFiles&&batchFiles.length));},[showForm,batchFiles]);
+  useEffect(()=>{
+    if(!ES_APP||typeof window==='undefined'||!window.storage||typeof window.storage.onRemoteChange!=='function')return;
+    const off=window.storage.onRemoteChange((clave,valor)=>{
+      if(!loadedRef.current)return;
+      if(clave==='bh10-fc-v3'&&!edicionAbiertaRef.current&&!difFacturas.current.hayPendiente()){
+        try{
+          const arr=JSON.parse(valor);
+          if(!Array.isArray(arr))return;
+          window.storage.get('bh10-fc-v3').catch(()=>{}); // marca esta versión como la que la app tiene en memoria
+          origenCambio.current='otro aparato';
+          setInvoices(listaSegura(arr,'bh10-fc-v3'));
+          notify('🔄 Facturas actualizadas desde otro aparato');
+        }catch(e){setAvisoRemoto(clave);}
+        return;
+      }
+      setAvisoRemoto(clave);
+    });
+    return off;
+  },[]);
   useEffect(()=>{
     if(!invSaveReady.current){invSaveReady.current=true;return;}
     if(!loadedRef.current)return; // nunca guardar antes de completar la carga
@@ -3056,7 +3079,9 @@ function App(){
       const r=(rango&&rango.ini&&rango.fin)?rango:rangoPeriodo('mesant');
       let ini=new Date(r.ini), fin=new Date(r.fin), per=r.etq;
       fin.setHours(23,59,59,999);
-      const enP=(i)=>{const d=fechaSegura(i.fecha);return !!d&&d>=ini&&d<=fin;};
+      // v398 · «registradas desde»: para no repetir en el siguiente envío lo que ya se mandó del mismo trimestre
+      const regDesde=r.regDesde?String(r.regDesde):'';
+      const enP=(i)=>{const d=fechaSegura(i.fecha);return !!d&&d>=ini&&d<=fin&&(!regDesde||String(i.fechaRegistro||i.fecha||'')>=regDesde);};
       // Las que no tienen fecha legible no caben en ningún trimestre: se avisan
       const sinFecha=invoices.filter(i=>esGastoFiscal(i)&&!fechaSegura(i.fecha));
       const recP=invoices.filter(i=>esGastoFiscal(i)&&enP(i));
@@ -3088,7 +3113,8 @@ function App(){
           +sinFecha.slice(0,40).map(i=>'  · '+(i.proveedor||'')+' nº'+(i.numFactura||'s/n')+' ('+(i.fecha||'sin fecha')+')').join('\n')+'\n':'')
         +((seguridad&&seguridad.clave)?'\nEste archivo va protegido con contraseña.\n':'')});
       const clave=(seguridad&&seguridad.clave)||'';
-      const zips=await descargarEnZips(entradas,'gestoria_'+per+'_BH10',clave,!!(seguridad&&seguridad.fuerte));
+      const zips=await descargarEnZips(entradas,'gestoria_'+per+(regDesde?'_reg-desde-'+regDesde:'')+'_BH10',clave,!!(seguridad&&seguridad.fuerte));
+      try{localStorage.setItem('bh10-gestoria-ultimo',JSON.stringify({fecha:new Date().toISOString().slice(0,10),per,regDesde}));}catch(e){}
       const blob=zips[0].blob;
       if(clave)anotarCesion('GESTORÍA · '+per,['Paquete de '+recP.length+' facturas']);
       notify('📦 Paquete listo: '+recP.length+' facturas · '+subidos+' documentos'+(cuadre.sinAdj.length?' · '+cuadre.sinAdj.length+' sin adjuntar':'')+(cuadre.fallidos.length?' · '+cuadre.fallidos.length+' NO descargadas (ver LEEME)':'')+(clave?' · protegido':''),cuadre.fallidos.length?'error':undefined);
@@ -6532,7 +6558,9 @@ function App(){
         if(fProvSel!=='todos')r=r.filter(i=>i.proveedor===fProvSel);
         if(fMes){const ym=today.slice(0,7);r=r.filter(i=>(i.fecha||'').startsWith(ym));}
         if(fSinDoc)r=r.filter(i=>{const d=docEstado(i);return d==='falta'||d==='nube';});
-        const sorters={fecha_desc:(a,b)=>(b.fecha||'').localeCompare(a.fecha||''),fecha_asc:(a,b)=>(a.fecha||'').localeCompare(b.fecha||''),importe_desc:(a,b)=>(b.total||0)-(a.total||0),vencimiento:(a,b)=>(a.fechaVencimiento||'9999').localeCompare(b.fechaVencimiento||'9999')};
+        const _reg=(i)=>String(i.fechaRegistro||i.fecha||'');
+        const sorters={fecha_desc:(a,b)=>(b.fecha||'').localeCompare(a.fecha||''),fecha_asc:(a,b)=>(a.fecha||'').localeCompare(b.fecha||''),
+          registro_desc:(a,b)=>_reg(b).localeCompare(_reg(a))||(b.fecha||'').localeCompare(a.fecha||''),registro_asc:(a,b)=>_reg(a).localeCompare(_reg(b))||(a.fecha||'').localeCompare(b.fecha||''),importe_desc:(a,b)=>(b.total||0)-(a.total||0),vencimiento:(a,b)=>(a.fechaVencimiento||'9999').localeCompare(b.fechaVencimiento||'9999')};
         r.sort(sorters[sortMode]||sorters.fecha_desc);
 
         // Facturas pendientes de pago para SEPA
@@ -6684,7 +6712,7 @@ function App(){
               <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
             </select>
             <select style={{...S.select,width:'auto',fontSize:11,padding:'4px 6px'}} value={sortMode} onChange={e=>setSortMode(e.target.value)}>
-              <option value="fecha_desc">↓ Más recientes</option><option value="fecha_asc">↑ Más antiguas</option><option value="importe_desc">€ Mayor importe</option><option value="vencimiento">⏰ Por vencimiento</option>
+              <option value="fecha_desc">↓ Más recientes</option><option value="fecha_asc">↑ Más antiguas</option><option value="registro_desc">📝 Últimas registradas</option><option value="registro_asc">📝 Primeras registradas</option><option value="importe_desc">€ Mayor importe</option><option value="vencimiento">⏰ Por vencimiento</option>
             </select>
             <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:700,background:C.sc+'22',color:C.sc}} title="Exportar a Excel con el filtro actual" onClick={()=>{
               const partes=[];
@@ -10522,9 +10550,13 @@ function App(){
         const r=rangoPeriodo(pkPeriodo.clave,pkPeriodo.trim);
         const dIni=pkPeriodo.ini||r.ini, dFin=pkPeriodo.fin||r.fin;
         const opciones=[['mes','Este mes'],['mesant','Mes anterior'],['trim','Trimestre'],['anio','Este año'],['anioant','Año pasado']];
-        const cuenta=invoices.filter(i=>i.tipo==='factura'&&String(i.fecha||'')>=dIni&&String(i.fecha||'')<=dFin).length;
+        const regDesde=pkPeriodo.regDesde||'';
+        const regOk=(i)=>!regDesde||String(i.fechaRegistro||i.fecha||'')>=regDesde;
+        let ultimoPk=null;try{ultimoPk=JSON.parse(localStorage.getItem('bh10-gestoria-ultimo')||'null');}catch(e){}
+        const cuenta=invoices.filter(i=>i.tipo==='factura'&&String(i.fecha||'')>=dIni&&String(i.fecha||'')<=dFin&&regOk(i)).length;
+        const fueraPorReg=regDesde?invoices.filter(i=>i.tipo==='factura'&&String(i.fecha||'')>=dIni&&String(i.fecha||'')<=dFin&&!regOk(i)).length:0;
         // ── chequeo previo (v353): lo mismo que irá al zip, mirado ANTES ──
-        const recP=invoices.filter(i=>esGastoFiscal(i)&&String(i.fecha||'')>=dIni&&String(i.fecha||'')<=dFin);
+        const recP=invoices.filter(i=>esGastoFiscal(i)&&String(i.fecha||'')>=dIni&&String(i.fecha||'')<=dFin&&regOk(i));
         const sinAdj=recP.filter(i=>!i.adjPath);
         const rotos=recP.filter(i=>i.adjPath&&!esquemaEnlace(i.adjPath).ok);
         const pendNube=recP.filter(i=>i.adjPath&&esquemaEnlace(i.adjPath).ok&&i.adjNube===false);
@@ -10552,9 +10584,22 @@ function App(){
                 <label><span style={{fontSize:10,color:C.mt}}>Desde</span><input type="date" style={S.input} value={dIni} onChange={e=>setPkPeriodo(p=>({...p,clave:'libre',ini:e.target.value,fin:p.fin||r.fin}))}/></label>
                 <label><span style={{fontSize:10,color:C.mt}}>Hasta</span><input type="date" style={S.input} value={dFin} onChange={e=>setPkPeriodo(p=>({...p,clave:'libre',fin:e.target.value,ini:p.ini||r.ini}))}/></label>
               </div>
+              <div style={{border:`1px solid ${regDesde?C.in:C.bd}`,borderRadius:8,padding:'8px 10px',marginBottom:10}}>
+                <label><span style={{fontSize:10,color:C.mt}}>Solo facturas registradas en la app desde (opcional)</span>
+                  <input type="date" style={S.input} value={regDesde} onChange={e=>setPkPeriodo(p=>({...p,regDesde:e.target.value}))}/></label>
+                <div style={{fontSize:10,color:C.mt,marginTop:4,lineHeight:1.4}}>Para un segundo envío del mismo trimestre: se mandan solo las que entraron en la app a partir de esa fecha, aunque la factura sea más antigua, y no se repite lo ya enviado.</div>
+                {ultimoPk&&ultimoPk.fecha&&(
+                  <div style={{display:'flex',gap:6,alignItems:'center',marginTop:6,flexWrap:'wrap'}}>
+                    <span style={{fontSize:10,color:C.mt}}>Último paquete generado en este aparato: {fmtDate(ultimoPk.fecha)} ({ultimoPk.per})</span>
+                    {regDesde!==ultimoPk.fecha&&<button style={S.sm(C.in)} onClick={()=>setPkPeriodo(p=>({...p,regDesde:ultimoPk.fecha}))}>Desde ese día</button>}
+                    {regDesde&&<button style={S.ghost} onClick={()=>setPkPeriodo(p=>({...p,regDesde:''}))}>Quitar</button>}
+                  </div>
+                )}
+              </div>
               <div style={{background:C.bg,borderRadius:8,padding:'8px 10px',fontSize:11,marginBottom:10}}>
                 <span style={{color:C.mt}}>Periodo: </span><b>{fmtDate(dIni)} → {fmtDate(dFin)}</b><br/>
                 <span style={{color:C.mt}}>Facturas recibidas incluidas: </span><b style={{color:cuenta?C.sc:C.wn}}>{cuenta}</b>
+                {fueraPorReg>0&&<span style={{color:C.mt}}> · {fueraPorReg} del periodo quedan fuera por estar registradas antes del {fmtDate(regDesde)}</span>}
               </div>
               {recP.length>0&&(
                 <div style={{border:`1px solid ${faltan.length?C.wn+'66':C.sc+'44'}`,borderRadius:8,padding:'8px 10px',fontSize:11,marginBottom:10,background:faltan.length?C.wn+'0d':C.sc+'0d'}}>
@@ -10603,7 +10648,7 @@ function App(){
                 <button style={{...S.btn(C.ac),opacity:pkBusy?0.6:1}} disabled={pkBusy||!cuenta} onClick={()=>{
                   const etq=(pkPeriodo.clave==='libre')?(dIni+'_a_'+dFin):r.etq;
                   setPkPeriodo(null);setPkCheq(null);
-                  generarPaqueteGestoria({ini:dIni,fin:dFin,etq});
+                  generarPaqueteGestoria({ini:dIni,fin:dFin,etq,regDesde});
                 }}>{pkBusy?'⏳ Preparando…':'📦 Generar paquete'}</button>
                 <button style={S.ghost} onClick={()=>{setPkPeriodo(null);setPkCheq(null);}}>Cancelar</button>
               </div>
@@ -12748,6 +12793,11 @@ function App(){
       {!ES_APP&&<div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:60,background:'#3a2a05',color:'#F59E0B',fontSize:10,fontWeight:800,textAlign:'center',padding:'5px 8px'}}>🧪 MODO PRUEBA · datos locales, sin nube · tu app real está en bh10group.com/app/</div>}
       {ES_APP&&(()=>{
         const st=(typeof window!=='undefined'&&window.storage&&typeof window.storage.getStatus==='function')?window.storage.getStatus():null;
+        if(avisoRemoto&&(!st||!st.fase||st.fase==='ok'))return <div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:60,background:'#0f3a44',color:'#9fe3ec',fontSize:11,fontWeight:800,textAlign:'center',padding:'6px 8px',display:'flex',gap:8,justifyContent:'center',alignItems:'center'}}>
+          <span>🔄 Otro aparato ha guardado datos nuevos ({describirArea?describirArea(avisoRemoto)||avisoRemoto:avisoRemoto}). Termina lo que tengas abierto y recarga.</span>
+          <button style={{background:'#9fe3ec',color:'#0f3a44',border:'none',borderRadius:6,padding:'3px 10px',fontWeight:800,cursor:'pointer'}} onClick={()=>{window.bh10Resync&&window.bh10Resync();}}>Recargar ahora</button>
+          <button style={{background:'transparent',color:'#9fe3ec',border:'1px solid #9fe3ec55',borderRadius:6,padding:'3px 8px',cursor:'pointer'}} onClick={()=>setAvisoRemoto(null)}>Luego</button>
+        </div>;
         if(!st||!st.fase||st.fase==='ok')return null;
         const conflicto=st.fase==='conflicto';
         return <div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:60,background:conflicto?'#4a2a05':'#4a1010',color:conflicto?'#FCD34D':'#FCA5A5',fontSize:11,fontWeight:800,textAlign:'center',padding:'6px 8px'}}>{conflicto?'⚠️ CONFLICTO: otro dispositivo tiene datos más nuevos — recarga desde la nube':'⚠️ SIN CONEXIÓN CON LA NUBE — trabajando en local, no se sincroniza'}</div>;

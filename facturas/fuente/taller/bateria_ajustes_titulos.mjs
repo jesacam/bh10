@@ -45,7 +45,7 @@ async function pasada(modo){
     delete:async k=>({key:k}),
     list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),
     getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
-  const {default:App}=await import('../web_subir/app/assets/bh10-APPV397.js');
+  const {default:App}=await import('../web_subir/app/assets/bh10-APPV398.js');
   const oe=console.error;console.error=()=>{};
   createRoot(document.getElementById('root')).render(React.createElement(App));
   const E=ms=>new Promise(r=>setTimeout(r,ms));
