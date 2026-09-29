@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Tus datos &middot; BIG HOUSE 2010</title>
+<style>
+  :root{--bg:#0F172A;--sf:#1B2540;--bd:#334155;--tx:#E2E8F0;--mt:#94A3B8;--ac:#7BF07B;--dn:#EF4444;--wn:#F59E0B;--in:#38BDF8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.5}
+  .caja{max-width:540px;margin:0 auto;padding:22px 18px calc(30px + env(safe-area-inset-bottom))}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{color:var(--mt);font-size:12px;margin-bottom:18px}
+  label{display:block;margin-bottom:11px}
+  label>span{display:block;font-size:11px;color:var(--mt);margin-bottom:3px}
+  input,select,textarea{width:100%;background:var(--sf);border:1px solid var(--bd);border-radius:9px;color:var(--tx);padding:11px;font-size:16px;outline:none;font-family:inherit}
+  input:focus,select:focus,textarea:focus{border-color:var(--in)}
+  /* v371 · Jesús: «todo debe estar en mayúsculas únicamente, para que sea
+     uniforme y homogéneo». El comprador lo ve así mientras escribe. El correo
+     se deja como lo teclea: en mayúsculas no se lee bien ni se copia bien. */
+  input[type=text],input[type=tel],textarea{text-transform:uppercase}
+  input[type=email],input[data-tal]{text-transform:none}
+  .fila{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sec{font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px}
+  button{width:100%;padding:15px;border-radius:11px;border:none;font-size:15px;font-weight:800;cursor:pointer}
+  .primario{background:var(--ac);color:#04120C}
+  .primario:disabled{opacity:.4;cursor:not-allowed}
+  .msg{border-radius:9px;padding:10px 12px;font-size:13px;margin:10px 0}
+  .err{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.5);color:#FCA5A5}
+  .ok{background:rgba(123,240,123,.12);border:1px solid rgba(123,240,123,.4);color:var(--ac)}
+  .oculto{display:none}
+  .bloque,.titular{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+  .titular.principal{border-color:rgba(123,240,123,.4)}
+  .titular h3{font-size:13px;margin:0 0 4px;display:flex;align-items:center;gap:7px}
+  .avisoFra{font-size:10px;color:var(--mt);margin:0 0 11px;line-height:1.4}
+  .quitar{background:none;border:none;color:var(--dn);font-size:12px;cursor:pointer;width:auto;padding:0;margin-left:auto;font-weight:600}
+  .add{background:rgba(56,189,248,.12);border:1px dashed rgba(56,189,248,.5);color:var(--in);font-weight:700;font-size:13px;padding:13px}
+  .dni{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px}
+  .foto{background:rgba(56,189,248,.08);border:1px dashed rgba(56,189,248,.45);border-radius:10px;padding:14px 8px;text-align:center;cursor:pointer;font-size:11px;color:var(--in);min-height:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .foto.puesta{background:rgba(123,240,123,.1);border-color:rgba(123,240,123,.5);color:var(--ac);border-style:solid}
+  .foto img{max-width:100%;max-height:52px;border-radius:5px}
+  .misma{display:flex;align-items:center;gap:8px;cursor:pointer;margin:0 0 10px;font-size:11.5px;color:var(--mt)}
+  .misma input{width:19px;height:19px;flex-shrink:0;accent-color:var(--in);margin:0}
+  .aviso{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:0;margin:14px 0 10px;overflow:hidden}
+  .aviso h2{font-size:13px;margin:0;padding:12px 14px;background:rgba(56,189,248,.1);border-bottom:1px solid var(--bd);color:var(--in)}
+  .texto{max-height:230px;overflow-y:auto;padding:12px 14px;font-size:12.5px;line-height:1.6;-webkit-overflow-scrolling:touch}
+  .texto h3{font-size:12px;margin:14px 0 3px;color:var(--tx)}
+  .texto p{margin:0 0 8px;color:#CBD5E1}
+  .barra{height:4px;background:var(--bd)}
+  .barra>div{height:100%;width:0;background:var(--in);transition:width .15s}
+  .pie{padding:10px 14px;font-size:11px;border-top:1px solid var(--bd)}
+  .marca{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;cursor:pointer;border-top:1px solid var(--bd)}
+  .marca input{width:21px;height:21px;flex-shrink:0;margin:1px 0 0;accent-color:var(--ac)}
+  .marca.off{opacity:.45;cursor:not-allowed}
+  .marca span{font-size:12.5px;line-height:1.45}
+  .nota{font-size:11px;color:var(--mt);line-height:1.5;margin-top:14px}
+  .info{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.35);border-radius:9px;padding:9px 11px;font-size:11.5px;color:#CBD5E1;line-height:1.5;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="caja">
+  <!-- v370 · FIRMA DEL CONTRATO EN EL MÓVIL ────────────────────────────────
+     El comprador ve el texto ÍNTEGRO que se le manda y firma con el dedo.
+     No se le enseña un resumen: se firma lo que se lee. -->
+<div id="pasoFirma" class="oculto">
+  <h1 id="firmaTitulo">Contrato</h1>
+  <div style="font-size:12px;color:var(--mt);margin-bottom:8px">Lee el contrato completo y, si estás conforme, firma abajo con el dedo. Guardaremos tu firma junto con la fecha, la hora y una huella del texto exacto que has leído.</div>
+  <div id="firmaTexto" style="max-height:46vh;overflow-y:auto;white-space:pre-wrap;font-size:12px;line-height:1.6;border:1px solid var(--bd);border-radius:10px;padding:12px;background:var(--cd)"></div>
+  <label class="misma" style="margin-top:10px"><input type="checkbox" id="chkFirma"><span style="color:var(--tx)">He leído el contrato completo y estoy conforme con su contenido.</span></label>
+  <div style="font-size:11px;color:var(--mt);margin:8px 0 4px">Firma aquí con el dedo:</div>
+  <canvas id="lienzo" style="width:100%;height:180px;border:1px dashed var(--bd);border-radius:10px;background:#fff;touch-action:none"></canvas>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button id="btnLimpiar" class="sec" style="flex:0 0 auto">Borrar firma</button>
+    <button id="btnFirmar" style="flex:1" disabled>Firmar y enviar</button>
+  </div>
+  <div id="msgF"></div>
+</div>
+<div id="paso1">
+    <h1>Tus datos</h1>
+    <div class="sub" id="cab">Cargando&hellip;</div>
+    <div id="msgCarga"></div>
+    <div id="formulario" class="oculto">
+
+      <div id="bloqueEmpresa" class="oculto">
+        <label><span>Para qu&eacute; empresa *</span><select id="empresaSel"></select></label>
+      </div>
+
+      <div class="sec" id="tituloSec">Datos del titular</div>
+      <div class="info" id="avisoDni">Si sois varios titulares, a&ntilde;ade a los dem&aacute;s abajo: todos constar&aacute;n en el contrato. Para la escritura, la notar&iacute;a necesita el DNI de cada uno; s&uacute;belo aqu&iacute; y te ahorras el tr&aacute;mite. <b>Se borra en cuanto se firma la escritura.</b></div>
+
+      <div id="titulares"></div>
+      <button type="button" class="add" id="btnAdd">&#65291; A&ntilde;adir otro titular</button>
+
+      <div class="sec">Financiaci&oacute;n <span style="text-transform:none;font-weight:400">(opcional)</span></div>
+      <div class="bloque" id="bloqueBancos">
+        <label class="misma" style="align-items:flex-start;margin:0">
+          <input type="checkbox" id="chkBancos" style="margin-top:2px">
+          <span style="color:var(--tx);font-size:13px">Quiero que me pong&aacute;is en contacto con entidades financieras para estudiar la hipoteca.</span>
+        </label>
+        <div id="detalleBancos" class="oculto" style="margin-top:11px">
+          <div class="info" style="margin-top:0">
+            Se enviar&aacute;n <b>solo estos datos</b>: nombre y apellidos, DNI, tel&eacute;fono, correo y la vivienda reservada.
+            No se env&iacute;a tu DNI escaneado, ni tu estado civil, ni ning&uacute;n otro dato.
+          </div>
+          <span style="display:block;font-size:11px;color:var(--mt);margin-bottom:5px">&iquest;A cu&aacute;les? Marca las que quieras (puedes marcar varias)</span>
+          <div id="listaBancos"></div>
+          <label><span>Vivienda reservada</span><input id="vivienda" placeholder="Chalet n&ordm; 4, Residencial Las Acacias"></label>
+          <div style="font-size:10.5px;color:var(--mt);line-height:1.5">
+            Esto es <b>voluntario</b>: si no lo marcas, la compra sigue igual.
+            Puedes retirarlo cuando quieras escribiendo a greenbighouse@gmail.com, y caduca por s&iacute; solo al a&ntilde;o.
+          </div>
+        </div>
+      </div>
+
+      <div class="aviso">
+        <h2>&#128274; Informaci&oacute;n sobre protecci&oacute;n de datos</h2>
+        <div class="texto" id="texto"></div>
+        <div class="barra"><div id="progreso"></div></div>
+        <div class="pie" id="pieLectura" style="color:var(--wn)">Despl&aacute;zate hasta el final para poder continuar</div>
+        <label class="marca off" id="marcaInfo">
+          <input type="checkbox" id="chkInfo" disabled>
+          <span>He le&iacute;do la informaci&oacute;n sobre protecci&oacute;n de datos y entiendo para qu&eacute; se van a usar mis datos.</span>
+        </label>
+        <label class="marca">
+          <input type="checkbox" id="chkComercial">
+          <span style="color:var(--mt)">Adem&aacute;s, quiero recibir informaci&oacute;n sobre otras promociones y novedades. <b style="color:var(--tx)">Esto es opcional</b> y puedo retirarlo cuando quiera.</span>
+        </label>
+      </div>
+
+      <div id="msg"></div>
+      <button class="primario" id="btnEnviar" disabled>Enviar mis datos</button>
+      <div class="nota">Los campos con * son necesarios para el contrato y la factura.</div>
+    </div>
+  </div>
+  <div id="pieDerechos" class="oculto" style="margin-top:22px;padding-top:16px;border-top:1px solid var(--bd)">
+    <button type="button" id="btnDerechos" style="background:none;border:none;color:var(--mt);font-size:11.5px;text-decoration:underline;padding:0;width:auto;font-weight:400;cursor:pointer">
+      Ejercer mis derechos sobre mis datos (acceso, rectificaci&oacute;n o supresi&oacute;n)
+    </button>
+  </div>
+
+  <div id="pasoDerechos" class="oculto">
+    <h1>Tus derechos</h1>
+    <div class="sub">Escr&iacute;benos qu&eacute; quieres y te contestamos en un mes como m&aacute;ximo.</div>
+    <div class="bloque">
+      <label><span>Nombre y apellidos *</span><input id="dNombre" autocomplete="name"></label>
+      <div class="fila">
+        <label><span>DNI / NIE / CIF *</span><input id="dDni" autocapitalize="characters"></label>
+        <label><span>Tel&eacute;fono</span><input id="dTel" type="tel" inputmode="tel"></label>
+      </div>
+      <label><span>Correo electr&oacute;nico *</span><input id="dEmail" type="email" inputmode="email" autocapitalize="off"></label>
+      <label><span>&iquest;Qu&eacute; quieres? *</span>
+        <select id="dTipo">
+          <option value="supresion">Que borr&eacute;is mis datos (supresi&oacute;n)</option>
+          <option value="acceso">Saber qu&eacute; datos ten&eacute;is m&iacute;os (acceso)</option>
+          <option value="rectificacion">Corregir un dato que est&aacute; mal (rectificaci&oacute;n)</option>
+          <option value="oposicion">Que dej&eacute;is de usarlos para algo (oposici&oacute;n)</option>
+          <option value="portabilidad">Que me los deis para llev&aacute;rmelos (portabilidad)</option>
+          <option value="revocar">Retirar mi autorizaci&oacute;n a las entidades financieras</option>
+        </select></label>
+      <label><span>Detalle <span style="opacity:.7">(opcional)</span></span>
+        <textarea id="dTexto" rows="3" placeholder="Qu&eacute; dato concreto, o cualquier cosa que quieras a&ntilde;adir"></textarea></label>
+      <div class="info" id="avisoSupresion">
+        Un aviso honesto: hay datos que <b>la ley nos obliga a conservar</b> aunque nos pidas borrarlos
+        —las facturas, seis a&ntilde;os por el C&oacute;digo de Comercio y cuatro por Hacienda—.
+        Lo dem&aacute;s se borra, y lo que haya que guardar queda <b>bloqueado</b>: solo a disposici&oacute;n
+        de un juez o de la Administraci&oacute;n, sin usarlo para nada m&aacute;s. Te diremos exactamente qu&eacute; queda y hasta cu&aacute;ndo.
+      </div>
+      <div id="msgD"></div>
+      <button class="primario" id="btnEnviarD">Enviar solicitud</button>
+      <button type="button" id="btnVolverD" style="background:none;border:1px solid var(--bd);color:var(--mt);margin-top:8px">Volver</button>
+    </div>
+  </div>
+
+  <div id="paso2" class="oculto">
+    <h1>&#10003; Recibido</h1>
+    <div class="msg ok" id="okTxt"></div>
+    <div class="nota">Ya puedes cerrar esta p&aacute;gina. Si necesitas cambiar algo, escr&iacute;benos.</div>
+  </div>
+</div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const CFG = {
+  apiKey: "AIzaSyB6Nvqq6CrZGjly0V8iXg872Z3bV7aQjPU",
+  authDomain: "b10h-facturas.firebaseapp.com",
+  projectId: "b10h-facturas",
+  storageBucket: "b10h-facturas.firebasestorage.app",
+  messagingSenderId: "940248180337",
+  appId: "1:940248180337:web:989686e6c5fcb80b1c9dd0"
+};
+const db = getFirestore(initializeApp(CFG));
+const $ = (id) => document.getElementById(id);
+const pinta = (el, t, c) => { el.innerHTML = t ? '<div class="msg '+c+'">'+t+'</div>' : ''; };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// Persona fisica o empresa: a una empresa no se le pide el DNI, no lo tiene.
+// Las letras iniciales de persona juridica estan tasadas por la AEAT.
+const LETRAS_EMPRESA = 'ABCDEFGHJNPQRSUVW';
+const esEmpresa = (nif) => {
+  const n = String(nif||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return n.length >= 8 && LETRAS_EMPRESA.indexOf(n[0]) >= 0;
+};
+
+const AVISO_VERSION = '2026-08-3';
+const AVISO_HTML = [
+'<h3>¿Quién trata tus datos?</h3>',
+'<p><b>BIG HOUSE 2010, S.L.</b>, con NIF <b>B45731981</b> y domicilio en <b>Calle Neón 12, 45200 Illescas (Toledo)</b>. Para cualquier cuestión sobre tus datos: <b>greenbighouse@gmail.com</b>.</p>',
+'<h3>¿Para qué?</h3>',
+'<p>Para preparar, firmar y ejecutar el contrato que nos une —presupuesto, contrato de obra o de compraventa, certificaciones y facturas—, para cumplir nuestras obligaciones de facturación, contables y fiscales, y para comunicarnos contigo sobre esa relación.</p>',
+'<p>Si nos facilitas copia de tu documento de identidad, es únicamente para <b>identificarte ante la notaría</b> en el otorgamiento de la escritura. No se usa para nada más.</p>',
+'<h3>¿Y lo de las entidades financieras?</h3>',
+'<p>Eso es distinto y por eso va en una casilla aparte, desmarcada: <b>mandar tus datos a un banco no hace falta para venderte la vivienda</b>, es un favor para ahorrarte gestiones. Ahí sí es tu consentimiento lo que nos legitima (artículo 6.1.a), y por eso puedes no darlo sin que pase nada.</p>',
+'<p>Si lo marcas, se envían <b>solo</b> tu nombre y apellidos, DNI, teléfono, correo y la vivienda reservada, únicamente a las entidades que tú señales. No se envía la copia de tu documento de identidad, ni tu estado civil, ni tu domicilio. Puedes retirarlo cuando quieras escribiéndonos, y caduca por sí solo al año.</p>',
+'<h3>¿Con qué derecho?</h3>',
+'<p>No te pedimos permiso, y conviene que sepas por qué: necesitamos estos datos <b>para poder hacer el contrato</b> (artículo 6.1.b del RGPD) y <b>porque la ley nos obliga</b> a emitir factura y conservarla (artículo 6.1.c). Si lo basáramos en tu consentimiento y lo retiraras, tendríamos que borrar unos datos que la ley nos obliga a guardar.</p>',
+'<p>La única casilla que sí es consentimiento es la de recibir novedades comerciales: es libre, va desmarcada y puedes retirarla cuando quieras.</p>',
+'<h3>¿Cuánto tiempo los guardamos?</h3>',
+'<p>Los datos del contrato y la facturación, mientras dure la relación y después los plazos legales: <b>seis años</b> la documentación mercantil (Código de Comercio) y <b>cuatro años</b> en materia tributaria. En compraventa de vivienda, además durante los plazos de garantía de la Ley de Ordenación de la Edificación.</p>',
+'<p><b>La copia del documento de identidad es una excepción</b>: se suprime en cuanto se firma la escritura, y en todo caso a los seis meses de habérnosla facilitado si la operación no llega a formalizarse.</p>',
+'<h3>¿A quién se los damos?</h3>',
+'<p>A la notaría y al registro de la propiedad cuando el contrato lo requiere, a la Administración tributaria cuando la ley lo exige, a nuestra asesoría fiscal y contable, y al banco para gestionar los cobros. No los vendemos ni los cedemos a nadie más.</p>',
+'<h3>¿Qué puedes hacer tú?</h3>',
+'<p>Pedirnos acceder a tus datos, rectificarlos, suprimirlos, limitar su uso, oponerte o llevártelos a otro sitio. Basta con escribirnos acreditando quién eres. Y si crees que no te atendemos como debemos, puedes reclamar ante la <b>Agencia Española de Protección de Datos</b> (www.aepd.es).</p>',
+'<p style="color:var(--mt);font-size:11px">Versión del aviso: ' + AVISO_VERSION + '</p>'
+].join('');
+
+const huella = async (t) => {
+  try {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('').slice(0,32);
+  } catch (e) {
+    // Sin conexion segura no hay huella criptografica; se deja constancia igual,
+    // porque perder la prueba entera seria peor que tener una version simple.
+    let h = 0; for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) >>> 0; }
+    return 'simple-' + h.toString(16);
+  }
+};
+
+const reducir = (file) => new Promise((res, rej) => {
+  const fr = new FileReader();
+  fr.onerror = () => rej(new Error('No se pudo leer la imagen'));
+  fr.onload = () => {
+    const img = new Image();
+    img.onerror = () => rej(new Error('Ese archivo no es una imagen'));
+    img.onload = () => {
+      const MAX = 1400;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { const f = MAX / Math.max(w, h); w = Math.round(w*f); h = Math.round(h*f); }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', 0.72));
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+});
+
+const params = new URLSearchParams(location.search);
+const token = (params.get('t') || '').trim();
+let ficha = null, abierto = Date.now(), destinoBase = null;
+// v367 · el configurador de la web corporativa puede traer las mejoras en el enlace:
+// ?t=TOKEN&m=<base64url de JSON [{concepto, importe}]>. Se validan y se envían con los datos.
+function mejorasDelEnlace(){
+  try{
+    const m=new URLSearchParams(location.search).get('m'); if(!m) return [];
+    const json=decodeURIComponent(escape(atob(m.replace(/-/g,'+').replace(/_/g,'/'))));
+    const lista=JSON.parse(json); if(!Array.isArray(lista)) return [];
+    return lista.slice(0,60).map(x=>({concepto:String(x&&x.concepto||'').slice(0,160),importe:Math.max(0,Math.round((+(x&&x.importe)||0)*100)/100)})).filter(x=>x.concepto);
+  }catch(e){ return []; }
+}
+// Un solo sitio para los datos: el titular 1 ES quien recibe la factura, asi que
+// sus datos no se piden dos veces. Antes habia un bloque «para la factura» y
+// otro «del titular» que repetian nombre y NIF.
+let titulares = [];
+
+const nuevoTitular = () => ({ nombre:'', nif:'', telefono:'', email:'',
+  dir:'', cp:'', municipio:'', provincia:'', mismaDir:true,
+  nacimiento:'', nacionalidad:'', estadoCivil:'', regimen:'', contacto:'', dniA:'', dniB:'' });
+
+const OPC_CIVIL = ['','Soltero/a','Casado/a','Pareja de hecho','Separado/a','Divorciado/a','Viudo/a'];
+const OPC_REG = ['','Gananciales','Separación de bienes','Participación'];
+
+const pintaTitulares = () => {
+  const empresa = esEmpresa((titulares[0]||{}).nif);
+  $('tituloSec').textContent = empresa ? 'Datos de la empresa' : (titulares.length > 1 ? 'Datos de los titulares' : 'Datos del titular');
+  $('avisoDni').classList.toggle('oculto', empresa);
+  $('btnAdd').classList.toggle('oculto', empresa);
+
+  $('titulares').innerHTML = titulares.map(function (t, i) {
+    const primero = i === 0;
+    const civil = OPC_CIVIL.map(o => '<option ' + (t.estadoCivil === o ? 'selected' : '') + '>' + (o || '—') + '</option>').join('');
+    const reg = OPC_REG.map(o => '<option ' + (t.regimen === o ? 'selected' : '') + '>' + (o || '—') + '</option>').join('');
+    const caraA = t.dniA ? '<img src="' + t.dniA + '" alt=""><span>&#10003; Anverso — tocar para cambiar</span>' : '<span style="font-size:19px">&#128247;</span><span>Anverso</span>';
+    const caraB = t.dniB ? '<img src="' + t.dniB + '" alt=""><span>&#10003; Reverso — tocar para cambiar</span>' : '<span style="font-size:19px">&#128247;</span><span>Reverso</span>';
+    const campo = (k, etiq, extra) => '<label><span>' + etiq + '</span><input data-t="' + i + '" data-k="' + k + '" value="' + esc(t[k]) + '" ' + (extra||'') + '></label>';
+
+    let html = '<div class="titular' + (primero ? ' principal' : '') + '">';
+    html += '<h3>' + (empresa ? '&#127970; Empresa' : (primero ? '&#128100; Titular 1' : '&#128101; Titular ' + (i+1)))
+          + (!primero ? '<button type="button" class="quitar" data-quitar="' + i + '">&#10005; quitar</button>' : '') + '</h3>';
+    if (primero && !empresa) html += '<div class="avisoFra">La factura se emite a su nombre.</div>';
+
+    html += campo('nombre', empresa ? 'Razón social *' : 'Nombre y apellidos *', 'autocomplete="name"');
+    html += '<div class="fila">'
+          + campo('nif', empresa ? 'CIF *' : 'DNI / NIE *', 'autocapitalize="characters"')
+          + (empresa ? campo('telefono', 'Teléfono *', 'type="tel" inputmode="tel"')
+                     : '<label><span>Fecha de nacimiento</span><input data-t="' + i + '" data-k="nacimiento" type="date" value="' + esc(t.nacimiento) + '"></label>')
+          + '</div>';
+
+    if (!empresa) {
+      html += '<div class="fila">'
+            + '<label><span>Estado civil</span><select data-t="' + i + '" data-k="estadoCivil">' + civil + '</select></label>'
+            + '<label><span>Régimen económico</span><select data-t="' + i + '" data-k="regimen">' + reg + '</select></label>'
+            + '</div>';
+      html += campo('nacionalidad', 'Nacionalidad', 'placeholder="Española"');
+    }
+
+    // Contacto: obligatorio en el primero, opcional en los demas
+    html += '<div class="fila">'
+          + campo('telefono', 'Teléfono' + (primero ? ' *' : ''), 'type="tel" inputmode="tel"')
+          + campo('email', 'Correo electrónico' + (primero ? ' *' : ''), 'type="email" inputmode="email" autocapitalize="off"')
+          + '</div>';
+    if (empresa && primero) html = html.replace('<label><span>Teléfono *</span><input data-t="0" data-k="telefono"', '<label style="display:none"><span>Teléfono *</span><input data-t="0" data-k="telefono"');
+
+    // Domicilio: los titulares que viven en la misma casa no lo reescriben
+    if (!primero) {
+      html += '<label class="misma"><input type="checkbox" data-misma="' + i + '"' + (t.mismaDir ? ' checked' : '') + '>'
+            + '<span>Mismo domicilio que el titular 1</span></label>';
+    }
+    if (primero || !t.mismaDir) {
+      html += campo('dir', 'Domicilio (calle y número)' + (primero ? ' *' : ''), 'autocomplete="street-address"');
+      html += '<div class="fila">'
+            + campo('cp', 'Código postal' + (primero ? ' *' : ''), 'inputmode="numeric"')
+            + campo('municipio', 'Municipio' + (primero ? ' *' : ''), '')
+            + '</div>';
+      html += campo('provincia', 'Provincia' + (primero ? ' *' : ''), '');
+    }
+
+    if (primero) html += campo('contacto', 'Persona de contacto para la obra <span style="opacity:.7">(si es distinta)</span>', '');
+
+    if (!empresa) {
+      html += '<span style="display:block;font-size:11px;color:var(--mt);margin-bottom:3px">Foto del DNI <span style="opacity:.7">(para la notaría)</span></span>';
+      html += '<div class="dni">'
+            + '<label class="foto ' + (t.dniA ? 'puesta' : '') + '" for="dniA' + i + '">' + caraA
+            + '<input id="dniA' + i + '" type="file" accept="image/*" capture="environment" style="display:none" data-foto="' + i + '" data-cara="dniA"></label>'
+            + '<label class="foto ' + (t.dniB ? 'puesta' : '') + '" for="dniB' + i + '">' + caraB
+            + '<input id="dniB' + i + '" type="file" accept="image/*" capture="environment" style="display:none" data-foto="' + i + '" data-cara="dniB"></label>'
+            + '</div>';
+    }
+    return html + '</div>';
+  }).join('');
+
+  const cont = $('titulares');
+  Array.prototype.forEach.call(cont.querySelectorAll('[data-k]'), el => {
+    const guarda = e => {
+      const t = +e.target.dataset.t, k = e.target.dataset.k;
+      const eraEmpresa = (t === 0 && k === 'nif') ? esEmpresa(titulares[0].nif) : null;
+      titulares[t][k] = e.target.value;
+      // v373 · Jesús (06-09-2026): «cada vez que ingreso un carácter se me
+      // des-selecciona la ventana y es imposible rellenar datos». Aquí estaba:
+      // al teclear en el NIF del primer titular se volvía a dibujar TODA la
+      // lista en cada letra, y al recrearse el campo se perdía el foco. (La
+      // variable `antes` que había aquí se calculaba y no se usaba: la
+      // comparación se quedó a medias.)
+      // Ahora solo se redibuja cuando el formulario CAMBIA DE FORMA de verdad
+      // —de persona a empresa o al revés—, y aun entonces se devuelve el foco
+      // al mismo campo y el cursor donde estaba.
+      if (t === 0 && k === 'nif') {
+        if (eraEmpresa !== esEmpresa(e.target.value)) {
+          const pos = e.target.selectionStart;
+          pintaTitulares();
+          const nuevo = document.querySelector('[data-t="0"][data-k="nif"]');
+          if (nuevo) {
+            nuevo.focus();
+            try { nuevo.setSelectionRange(pos, pos); } catch (err) { /* algunos campos no admiten cursor */ }
+          }
+        }
+      }
+    };
+    el.addEventListener('input', guarda);
+    el.addEventListener('change', guarda);
+  });
+  Array.prototype.forEach.call(cont.querySelectorAll('[data-quitar]'), b => {
+    b.addEventListener('click', () => { titulares.splice(+b.dataset.quitar, 1); pintaTitulares(); });
+  });
+  Array.prototype.forEach.call(cont.querySelectorAll('[data-misma]'), c => {
+    c.addEventListener('change', e => { titulares[+e.target.dataset.misma].mismaDir = e.target.checked; pintaTitulares(); });
+  });
+  Array.prototype.forEach.call(cont.querySelectorAll('input[data-foto]'), inp => {
+    inp.addEventListener('change', async e => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      pinta($('msg'), '', '');
+      try {
+        const b64 = await reducir(f);
+        if (b64.length > 900000) { pinta($('msg'), 'Esa foto pesa demasiado. Prueba con menos resolución.', 'err'); return; }
+        titulares[+e.target.dataset.foto][e.target.dataset.cara] = b64;
+        pintaTitulares();
+      } catch (x) { pinta($('msg'), String(x.message || x), 'err'); }
+    });
+  });
+};
+
+$('btnAdd').addEventListener('click', () => {
+  if (titulares.length >= 4) { pinta($('msg'), 'Como máximo cuatro titulares. Si sois más, escríbenos.', 'err'); return; }
+  titulares.push(nuevoTitular());
+  pintaTitulares();
+  const cards = document.querySelectorAll('.titular');
+  if (cards.length) cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+});
+
+(async () => {
+  try {
+    if (token) {
+      const s = await getDoc(doc(db, 'invitaciones', token));
+      if (!s.exists()) { pinta($('msgCarga'), 'Este enlace ya no está activo. Pide uno nuevo.', 'err'); $('cab').textContent=''; return; }
+      ficha = s.data() || {};
+      if (ficha.usado) { pinta($('msgCarga'), 'Estos datos ya se enviaron. Si necesitas cambiar algo, pide un enlace nuevo.', 'err'); $('cab').textContent=''; return; }
+      if (ficha.caduca && Date.now() > ficha.caduca) { pinta($('msgCarga'), 'Este enlace ha caducado. Pide uno nuevo.', 'err'); $('cab').textContent=''; return; }
+      destinoBase = (ficha.destino || []).slice(0, -1);
+      $('cab').innerHTML = 'Para <b>' + esc(ficha.empresaNombre || 'la empresa') + '</b>' + (ficha.motivo ? ' &middot; ' + esc(ficha.motivo) : '');
+      entidades = Array.isArray(ficha.entidades) ? ficha.entidades : [];
+      if (ficha.vivienda) { $('vivienda').value = ficha.vivienda; if (ficha.viviendaId) $('vivienda').readOnly = true; }
+      const t0 = nuevoTitular();
+      ['nombre','telefono','email','dir','cp','municipio','provincia','contacto'].forEach(k => { if (ficha[k]) t0[k] = ficha[k]; });
+      if (ficha.cif) t0.nif = ficha.cif;
+      titulares = [t0];
+    } else {
+      // Sin enlace: se entra directamente, como en el portal de proveedores
+      const s = await getDoc(doc(db, 'portal', 'default'));
+      if (!s.exists()) { pinta($('msgCarga'), 'El formulario no está activado todavía. Avisa a administración.', 'err'); $('cab').textContent=''; return; }
+      const p = s.data() || {};
+      const emps = Array.isArray(p.empresas) ? p.empresas : [];
+      if (!emps.length || !p.uid) { pinta($('msgCarga'), 'El formulario no está activado todavía. Avisa a administración.', 'err'); $('cab').textContent=''; return; }
+      $('bloqueEmpresa').classList.remove('oculto');
+      $('empresaSel').innerHTML = emps.map((e, i) => '<option value="' + i + '">' + esc(e.nombre) + '</option>').join('');
+      const rutaDe = () => {
+        const e = emps[+$('empresaSel').value || 0] || emps[0];
+        return e.sub ? ['empresas', p.uid, 'sub', e.sub, 'cliRecibidos'] : ['empresas', p.uid, 'cliRecibidos'];
+      };
+      destinoBase = rutaDe();
+      $('empresaSel').addEventListener('change', () => { destinoBase = rutaDe(); });
+      // v370 · si el enlace trae un contrato, esto no es un formulario: es una firma
+      if (p.firmar && p.texto) {
+        $('formulario').classList.add('oculto');
+        $('pasoFirma').classList.remove('oculto');
+        $('cab').innerHTML = '';
+        $('firmaTitulo').textContent = p.titulo || 'Contrato';
+        $('firmaTexto').textContent = p.texto;
+        montaFirma(p, s.id);
+        return;
+      }
+      $('cab').innerHTML = 'Rellena tus datos para que podamos hacerte el contrato y la factura.';
+      entidades = Array.isArray(p.entidades) ? p.entidades : [];
+      titulares = [nuevoTitular()];
+    }
+    pintaTitulares();
+    pintaBancos();
+    $('texto').innerHTML = AVISO_HTML;
+    $('formulario').classList.remove('oculto');
+    $('pieDerechos').classList.remove('oculto');
+  } catch (e) { pinta($('msgCarga'), 'No se ha podido abrir: ' + (e.code || e.message || e), 'err'); }
+})();
+
+let leidoHasta = 0, llegoAlFinal = false, tLectura = 0;
+const cajaTexto = $('texto');
+cajaTexto.addEventListener('scroll', () => {
+  const alto = cajaTexto.scrollHeight - cajaTexto.clientHeight;
+  const pct = alto <= 4 ? 100 : Math.min(100, Math.round(cajaTexto.scrollTop / alto * 100));
+  leidoHasta = Math.max(leidoHasta, pct);
+  $('progreso').style.width = leidoHasta + '%';
+  if (leidoHasta >= 97 && !llegoAlFinal) {
+    llegoAlFinal = true;
+    tLectura = Math.round((Date.now() - abierto) / 1000);
+    $('chkInfo').disabled = false;
+    $('marcaInfo').classList.remove('off');
+    $('pieLectura').style.color = 'var(--ac)';
+    $('pieLectura').textContent = '\u2713 Has llegado al final. Ya puedes marcar la casilla.';
+  }
+});
+setTimeout(() => {
+  if (cajaTexto.scrollHeight - cajaTexto.clientHeight <= 4 && !llegoAlFinal) {
+    llegoAlFinal = true; leidoHasta = 100;
+    $('progreso').style.width = '100%';
+    $('chkInfo').disabled = false;
+    $('marcaInfo').classList.remove('off');
+    $('pieLectura').textContent = '\u2713 Ya puedes marcar la casilla.';
+    $('pieLectura').style.color = 'var(--ac)';
+  }
+}, 700);
+$('chkInfo').addEventListener('change', () => { $('btnEnviar').disabled = !$('chkInfo').checked; });
+
+// ── v370 · FIRMA CON EL DEDO ────────────────────────────────────────────
+// Lienzo sencillo con eventos de puntero (vale para dedo y para ratón). El
+// trazo se guarda como PNG junto con la huella del texto leído: si alguien
+// cambiara una coma del contrato, la huella dejaría de casar.
+function montaFirma(p, token) {
+  const cv = $('lienzo');
+  const ctx = cv.getContext('2d');
+  const dib = () => { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+    ctx.scale(d, d); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111'; };
+  dib(); window.addEventListener('resize', () => { const t = hayTrazo; dib(); hayTrazo = t; });
+  let pintando = false, hayTrazo = false;
+  const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); pintando = true; hayTrazo = true; const q = pos(e); ctx.beginPath(); ctx.moveTo(q.x, q.y); cv.setPointerCapture(e.pointerId); revisa(); });
+  cv.addEventListener('pointermove', e => { if (!pintando) return; e.preventDefault(); const q = pos(e); ctx.lineTo(q.x, q.y); ctx.stroke(); });
+  cv.addEventListener('pointerup', () => { pintando = false; });
+  cv.addEventListener('pointercancel', () => { pintando = false; });
+  const revisa = () => { $('btnFirmar').disabled = !($('chkFirma').checked && hayTrazo); };
+  $('chkFirma').addEventListener('change', revisa);
+  $('btnLimpiar').addEventListener('click', () => { ctx.clearRect(0, 0, cv.width, cv.height); hayTrazo = false; revisa(); });
+  $('btnFirmar').addEventListener('click', async () => {
+    $('btnFirmar').disabled = true;
+    pinta($('msgF'), 'Enviando la firma…', '');
+    try {
+      const huellaLeida = await huella(p.texto);
+      if (p.huella && huellaLeida !== p.huella) {
+        pinta($('msgF'), 'El contrato no coincide con el que se te envió. No lo firmes: avisa a administración.', 'err');
+        return;
+      }
+      let ip = '';
+      try { const r = await fetch('https://bh10-master.jesacam.workers.dev/ip'); ip = ((await r.json()) || {}).ip || ''; } catch (e) {}
+      await setDoc(doc(db, ...destinoBase, 'fi' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), {
+        tipo: 'firma', docId: p.docId || '', viviendaId: p.viviendaId || '', obraId: p.obraId || '',
+        trazo: cv.toDataURL('image/png'), huella: huellaLeida, ip: ip,
+        cuando: new Date().toISOString(), navegador: String(navigator.userAgent || '').slice(0, 180),
+        token: token, estado: 'pendiente', creado: serverTimestamp()
+      });
+      if (token && p) await setDoc(doc(db, 'invitaciones', token), Object.assign({}, p, { usado: true, usadoEn: new Date().toISOString() }));
+      $('pasoFirma').classList.add('oculto');
+      $('okTxt').textContent = 'Gracias. Hemos recibido tu firma. Recibirás una copia del contrato firmado.';
+      $('paso2').classList.remove('oculto');
+    } catch (e) {
+      pinta($('msgF'), 'No se ha podido enviar la firma: ' + (e && e.message || e), 'err');
+      $('btnFirmar').disabled = false;
+    }
+  });
+}
+
+// ── Autorización para hablar con los bancos ──
+// Va desmarcada y con las entidades a elegir: un consentimiento vale si es
+// libre y específico. Un «autorizo a cederlo a quien haga falta» no lo sería.
+let entidades = [];
+const pintaBancos = () => {
+  $('listaBancos').innerHTML = entidades.length
+    ? entidades.map((e, i) => '<label class="misma"><input type="checkbox" data-banco="' + i + '">'
+        + '<span style="color:var(--tx)">' + esc(e) + '</span></label>').join('')
+    : '<div style="font-size:11px;color:var(--mt);margin-bottom:8px">Se te pondrá en contacto con las entidades con las que trabajamos.</div>';
+};
+$('chkBancos').addEventListener('change', () => {
+  $('detalleBancos').classList.toggle('oculto', !$('chkBancos').checked);
+  if ($('chkBancos').checked && !$('listaBancos').innerHTML) pintaBancos();
+});
+const bancosElegidos = () => entidades.filter((e, i) => {
+  const c = document.querySelector('[data-banco="' + i + '"]');
+  return c && c.checked;
+});
+
+// ── Ejercicio de derechos ──
+// Que puedan pedirlo por aquí evita que se pierda en un correo y deja
+// constancia de la fecha, que es la que hace correr el plazo de un mes.
+$('btnDerechos').addEventListener('click', () => {
+  $('paso1').classList.add('oculto');
+  $('pasoDerechos').classList.remove('oculto');
+  window.scrollTo(0, 0);
+});
+$('btnVolverD').addEventListener('click', () => {
+  $('pasoDerechos').classList.add('oculto');
+  $('paso1').classList.remove('oculto');
+  window.scrollTo(0, 0);
+});
+$('dTipo').addEventListener('change', () => {
+  $('avisoSupresion').classList.toggle('oculto', $('dTipo').value !== 'supresion');
+});
+$('btnEnviarD').addEventListener('click', async () => {
+  const v = (id) => String($(id).value || '').trim();
+  if (!v('dNombre')) { pinta($('msgD'), 'Falta tu nombre.', 'err'); return; }
+  if (!v('dDni')) { pinta($('msgD'), 'Falta tu DNI o CIF: sin él no podemos saber a quién corresponden los datos.', 'err'); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(v('dEmail'))) { pinta($('msgD'), 'Hace falta un correo válido para contestarte.', 'err'); return; }
+  if (!destinoBase) { pinta($('msgD'), 'No se ha podido determinar el destino. Recarga la página.', 'err'); return; }
+  $('btnEnviarD').disabled = true; $('btnEnviarD').textContent = 'Enviando…';
+  try {
+    const id = 'dr' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    await setDoc(doc(db, ...destinoBase.slice(0, -1), 'cliDerechos', id), {
+      nombre: v('dNombre').slice(0,200),
+      dni: v('dDni').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,15),
+      telefono: v('dTel').slice(0,30),
+      email: v('dEmail').slice(0,120),
+      tipo: $('dTipo').value,
+      texto: v('dTexto').slice(0,600),
+      estado: 'pendiente',
+      recibida: new Date().toISOString(),
+      creado: serverTimestamp()
+    });
+    $('okTxt').textContent = 'Gracias, ' + v('dNombre') + '. Hemos recibido tu solicitud y te contestaremos '
+      + 'en el plazo de un mes al correo ' + v('dEmail') + '.';
+    $('pasoDerechos').classList.add('oculto');
+    $('paso2').classList.remove('oculto');
+    window.scrollTo(0, 0);
+  } catch (e) {
+    pinta($('msgD'), 'No se ha podido enviar: ' + (e.code || e.message || e), 'err');
+    $('btnEnviarD').disabled = false; $('btnEnviarD').textContent = 'Enviar solicitud';
+  }
+});
+
+$('btnEnviar').addEventListener('click', async () => {
+  const t0 = titulares[0] || {};
+  const empresa = esEmpresa(t0.nif);
+  const falta = (v) => !String(v || '').trim();
+
+  const obligatorios = [[t0.nombre, empresa ? 'la razón social' : 'tu nombre y apellidos'],
+    [t0.nif, empresa ? 'el CIF' : 'tu DNI o NIE'], [t0.telefono, 'tu teléfono'], [t0.email, 'tu correo'],
+    [t0.dir, 'tu domicilio'], [t0.cp, 'el código postal'], [t0.municipio, 'el municipio'], [t0.provincia, 'la provincia']];
+  for (let i = 0; i < obligatorios.length; i++) {
+    if (falta(obligatorios[i][0])) { pinta($('msg'), 'Falta ' + obligatorios[i][1] + '.', 'err'); return; }
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(String(t0.email))) { pinta($('msg'), 'Ese correo no parece correcto.', 'err'); return; }
+  for (let i = 1; i < titulares.length; i++) {
+    if (falta(titulares[i].nombre)) { pinta($('msg'), 'Falta el nombre del titular ' + (i+1) + '.', 'err'); return; }
+    if (falta(titulares[i].nif)) { pinta($('msg'), 'Falta el DNI del titular ' + (i+1) + '.', 'err'); return; }
+  }
+  if (!$('chkInfo').checked) { pinta($('msg'), 'Falta confirmar que has leído la información.', 'err'); return; }
+  if (!destinoBase) { pinta($('msg'), 'No se ha podido determinar el destino. Recarga la página.', 'err'); return; }
+
+  $('btnEnviar').disabled = true; $('btnEnviar').textContent = 'Enviando…';
+  try {
+    const limpiaNif = (s) => String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,15);
+    const dirDe = (t) => (t.mismaDir && t !== t0)
+      ? { dir: t0.dir, cp: t0.cp, municipio: t0.municipio, provincia: t0.provincia }
+      : { dir: t.dir||'', cp: t.cp||'', municipio: t.municipio||'', provincia: t.provincia||'' };
+
+    const datos = {
+      nombre: String(t0.nombre).trim().slice(0,200),
+      cif: limpiaNif(t0.nif),
+      telefono: String(t0.telefono).trim().slice(0,30),
+      email: String(t0.email).trim().slice(0,120),
+      contacto: String(t0.contacto||'').trim().slice(0,120),
+      ...dirDe(t0),
+      esEmpresa: empresa,
+      viviendaReservada: String($('vivienda').value || '').trim().slice(0, 160),
+      viviendaId: String((ficha && ficha.viviendaId) || '').slice(0, 40),
+      obraId: String((ficha && ficha.obraId) || '').slice(0, 40),
+      mejoras: mejorasDelEnlace(),
+      // La autorización va aparte del resto: es consentimiento, no necesidad
+      // contractual, y tiene que poder retirarse sin tocar nada más.
+      bancos: {
+        autoriza: !!$('chkBancos').checked,
+        entidades: $('chkBancos').checked ? bancosElegidos() : [],
+        cuando: $('chkBancos').checked ? new Date().toISOString().slice(0, 10) : '',
+        version: AVISO_VERSION,
+        revocadoEn: '',
+      },
+    };
+    datos.titulares = empresa ? [] : titulares.map(t => ({
+      nombre: String(t.nombre||'').trim().slice(0,120),
+      dni: limpiaNif(t.nif),
+      nacimiento: t.nacimiento || '',
+      nacionalidad: String(t.nacionalidad||'').slice(0,50),
+      estadoCivil: t.estadoCivil || '', regimen: t.regimen || '',
+      telefono: String(t.telefono||'').trim().slice(0,30),
+      email: String(t.email||'').trim().slice(0,120),
+      ...dirDe(t),
+      tieneDni: !!(t.dniA || t.dniB),
+    }));
+
+    // v371 · MAYÚSCULAS de verdad, no solo pintadas: lo que viaja a la app va
+    // ya normalizado (se conservan tildes y eñes). El correo, tal cual.
+    const MAY = x => String(x == null ? '' : x).toLocaleUpperCase('es-ES').trim();
+    // v374 · NO se tocan los identificadores internos. En la v371 esto pasaba
+    // viviendaId («vv1m3xk2p9abc») a mayúsculas y al llegar a la app ya no
+    // casaba con ninguna vivienda: los datos entraban como cliente suelto y la
+    // vivienda se quedaba sin titulares, en silencio. Las mayúsculas son para
+    // lo que LEE una persona, nunca para lo que compara una máquina.
+    const NO_TOCAR = /Id$|^token$|^huella$|^version$|^cuando$|^revocadoEn$|^nacimiento$|^email$|^dni/i;
+    const enMayusculas = o => {
+      const r = {};
+      for (const k of Object.keys(o)) {
+        const v = o[k];
+        r[k] = (typeof v === 'string' && !NO_TOCAR.test(k)) ? MAY(v) : v;
+      }
+      return r;
+    };
+    Object.assign(datos, enMayusculas(datos));
+    if (Array.isArray(datos.titulares)) datos.titulares = datos.titulares.map(enMayusculas);
+
+    const id = 'cr' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    const imgs = [];
+    if (!empresa) titulares.forEach((t, i) => { ['dniA','dniB'].forEach(c => { if (t[c]) imgs.push({ i:i, c:c, b64:t[c] }); }); });
+    for (let k = 0; k < imgs.length; k++) {
+      await setDoc(doc(db, ...destinoBase.slice(0, -1), 'cliDni', id + '_' + imgs[k].i + '_' + imgs[k].c), {
+        img: imgs[k].b64, titular: imgs[k].i, cara: imgs[k].c,
+        nombreTitular: (titulares[imgs[k].i] || {}).nombre || '',
+        recibido: Date.now(),
+        borrarAntesDe: Date.now() + 180 * 864e5,
+        envio: id
+      });
+    }
+
+    await setDoc(doc(db, ...destinoBase, id), {
+      ...datos,
+      nDni: imgs.length,
+      estado: 'pendiente',
+      token: token,
+      rgpd: {
+        version: AVISO_VERSION,
+        huellaTexto: await huella(AVISO_HTML),
+        leidoHastaPct: leidoHasta,
+        segundosEnPantalla: tLectura || Math.round((Date.now() - abierto) / 1000),
+        informado: true,
+        comercial: !!$('chkComercial').checked,
+        cuando: new Date().toISOString(),
+        navegador: String(navigator.userAgent || '').slice(0, 140)
+      },
+      creado: serverTimestamp()
+    });
+    if (token && ficha) await setDoc(doc(db, 'invitaciones', token), Object.assign({}, ficha, { usado: true, usadoEn: new Date().toISOString() }));
+
+    $('okTxt').textContent = 'Gracias, ' + datos.nombre + '. Hemos recibido tus datos'
+      + (titulares.length > 1 ? ' y los de los ' + titulares.length + ' titulares' : '')
+      + (imgs.length ? ' con ' + imgs.length + ' foto' + (imgs.length !== 1 ? 's' : '') + ' del DNI' : '') + '. Quedan a la espera de revisión.';
+    $('paso1').classList.add('oculto');
+    $('paso2').classList.remove('oculto');
+    window.scrollTo(0, 0);
+  } catch (e) {
+    pinta($('msg'), 'No se ha podido enviar: ' + (e.code || e.message || e) + '. Inténtalo de nuevo.', 'err');
+    $('btnEnviar').disabled = false; $('btnEnviar').textContent = 'Enviar mis datos';
+  }
+});
+</script>
+
+<script type="module">
+/* App Check (reCAPTCHA v3). Si no puede activarse, la página sigue funcionando. */
+try{
+  const a=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+  const c=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');
+  for(let k=0;k<40&&!a.getApps().length;k++)await new Promise(r=>setTimeout(r,100));
+  if(a.getApps().length){
+    c.initializeAppCheck(a.getApp(),{provider:new c.ReCaptchaV3Provider('6Lc5AZMtAAAAAKBCZlXQZpQjF2PtBtQRRUod8Jx-'),isTokenAutoRefreshEnabled:true});
+  }
+}catch(e){}
+</script>
+</body>
+</html>

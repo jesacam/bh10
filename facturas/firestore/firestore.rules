@@ -70,10 +70,11 @@ service cloud.firestore {
       // Un miembro activo puede leer; y escribir solo si es admin en algún área
       // (el envoltorio deja constancia en el campo «escritor» al activarlo).
       // v365: ni adj (tiene su regla por área) ni cliDni (solo el dueño) entran aquí
-      allow read: if esMiembroDe(uid) && !(documento[0] in ['adj', 'cliDni']) && !(documento[0] == 'sub' && documento.size() > 2 && documento[2] in ['adj', 'cliDni']);
+      // v399: ni privado (token de Gmail del buzón) ni copias (copias de seguridad): solo el dueño
+      allow read: if esMiembroDe(uid) && !(documento[0] in ['adj', 'cliDni', 'privado', 'copias']) && !(documento[0] == 'sub' && documento.size() > 2 && documento[2] in ['adj', 'cliDni']);
       // v364: las claves kv NO entran aquí (Firestore concede si CUALQUIER match lo permite):
       // para ellas manda claveEscribible, más arriba.
-      allow write: if esMiembroEscritorDe(uid) && documento[0] != 'kv' && documento[0] != 'adj' && !(documento[0] == 'sub' && documento.size() > 2 && (documento[2] == 'kv' || documento[2] == 'adj'));
+      allow write: if esMiembroEscritorDe(uid) && documento[0] != 'kv' && documento[0] != 'adj' && documento[0] != 'privado' && documento[0] != 'copias' && !(documento[0] == 'sub' && documento.size() > 2 && (documento[2] == 'kv' || documento[2] == 'adj'));
     }
 
     // ── Membresías (fase 2) ───────────────────────────────────────────

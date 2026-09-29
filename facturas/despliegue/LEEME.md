@@ -9,7 +9,14 @@ que los zips `BH10_web_subir_vNNN`): `app/`, `c/`, `clientes/`, `facturas/`,
 `fichar/` e `index.html`. La subida REEMPLAZA todos los archivos del sitio, así
 que la carpeta tiene que llevar el sitio entero, no solo la app.
 
-Pasos (los hace Claude con el token de Cloudflare):
+Desde v399 la carpeta del sitio completa vive en el repositorio (`web/`), así que
+Git es la fuente de verdad: lo que hay en `web/` es lo que se publica. El flujo
+de GitHub Actions `.github/workflows/desplegar.yml` comprueba que el bundle
+comprometido coincide con una compilación limpia del fuente, pasa las baterías
+rápidas y despliega con `wrangler`. Necesita los secretos `CLOUDFLARE_API_TOKEN`
+y `CLOUDFLARE_ACCOUNT_ID` en el repositorio (Settings → Secrets → Actions).
+
+Pasos (los hace Claude con el token de Cloudflare, o el flujo de Actions):
 
 1. Compilar la app: `node taller/build_app.mjs` en `facturas/fuente` (produce
    `web_subir/app/assets/bh10-APPVNNN.js` y sus trozos).
@@ -22,4 +29,7 @@ Pasos (los hace Claude con el token de Cloudflare):
 4. Comprobar: `https://bh10group.com/app/` debe cargar `assets/app-vNNN.js` y
    `app/sw.js` no debe mencionar la versión anterior.
 
-Historial: v397 publicada el 29-09-2026 (lector robusto ante fotos giradas).
+Historial:
+- v397 · 29-09-2026 · lector robusto ante fotos giradas.
+- v398 · 29-09-2026 · escrituras por transacción (fin de los pisotones entre aparatos), orden por fecha de registro, gestoría desde una fecha.
+- v399 · 29-09-2026 · el lector no imputa a obra la dirección propia; casa con el catálogo de obras.

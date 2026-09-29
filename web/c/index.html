@@ -1,0 +1,22 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BH10</title>
+<meta name="robots" content="noindex,nofollow">
+<style>body{margin:0;background:#0B1120;color:#94A3B8;font:14px/1.5 system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh}</style>
+</head><body>
+<div id="m">Abriendo…</div>
+<script>
+// v371 · Enlace CORTO. Jesús pidió direcciones breves para mandar por WhatsApp:
+// /c/?t=K7M2PX9A en vez de /clientes/?t=... Esta página solo reenvía al portal
+// con el mismo token; no lee ni guarda nada. Si el token no viene o no tiene la
+// pinta que debe, no reenvía: se dice y punto.
+(function(){
+  var t=new URLSearchParams(location.search).get('t')||'';
+  if(/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6,24}$/.test(t)||/^c[a-z0-9]{8,20}$/.test(t)){
+    location.replace('/clientes/?t='+encodeURIComponent(t));
+  }else{
+    document.getElementById('m').textContent='Este enlace no es válido. Pide uno nuevo a administración.';
+  }
+})();
+</script>
+</body></html>
