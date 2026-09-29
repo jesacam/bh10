@@ -1,0 +1,6 @@
+{
+  "name": "bh10-copias",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@zip.js/zip.js": "2.8.57" }
+}

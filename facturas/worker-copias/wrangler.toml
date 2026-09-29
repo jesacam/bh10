@@ -1,0 +1,15 @@
+name = "bh10-copias"
+main = "src/index.js"
+compatibility_date = "2026-09-11"
+compatibility_flags = ["nodejs_compat"]
+
+# Copia de seguridad automática de la app de facturas: cada noche a las 03:15 (hora peninsular)
+[triggers]
+crons = ["15 1 * * *"]
+
+# Secretos (wrangler secret put): SA_JSON (cuenta de servicio de Firebase), EMPRESA_UID (uid del dueño),
+# COPIA_CLAVE (contraseña del zip), DRIVE_FOLDER_ID (opcional: carpeta de Drive compartida con la cuenta de servicio)
+[vars]
+FIREBASE_PROJECT = "b10h-facturas"
+DIAS_RETENCION_FIRESTORE = "30"
+DIAS_RETENCION_DRIVE = "90"
