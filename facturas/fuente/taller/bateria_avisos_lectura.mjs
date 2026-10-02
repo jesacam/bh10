@@ -1,0 +1,25 @@
+// ═══ BATERÍA AVISOS DE LECTURA (v400) · el aviso «importe cero» solo cuando es cero ═══
+import {avisosLectura,numES} from '../src/lectura.js';
+const ctx={today:'2026-10-02',miCif:'B45731981',miNombre:'BIG HOUSE 2010, S.L.'};
+const base={fecha:'2026-09-28',proveedor:'COMERCIAL DURMA, S.L.',proveedorCif:'B45000000',numFactura:'A-123'};
+let fallos=0;
+const t=(nombre,real,esperado)=>{const ok=JSON.stringify(real)===JSON.stringify(esperado);if(!ok)fallos++;console.log((ok?'  ✓ ':'  ✗ ')+nombre+(ok?'':'  → '+JSON.stringify(real)+' ≠ '+JSON.stringify(esperado)));};
+console.log('— numES —');
+t('«1.234,56»',numES('1.234,56'),1234.56);
+t('«234,56»',numES('234,56'),234.56);
+t('«1.234.567,89»',numES('1.234.567,89'),1234567.89);
+t('1234.56 número',numES(1234.56),1234.56);
+t('«1234.56» texto del lector',numES('1234.56'),1234.56);
+t('«12 €»',numES('12 €'),12);
+t('vacío',numES(''),0);
+t('basura',numES('abc'),0);
+console.log('— avisos —');
+t('importeBase formateado con miles: sin aviso',avisosLectura({...base,importeBase:'1.234,56',_totalLeido:1493.82},ctx),[]);
+t('importeBase formateado sin miles: sin aviso',avisosLectura({...base,importeBase:'234,56',_totalLeido:0},ctx),[]);
+t('solo _totalLeido: sin aviso',avisosLectura({...base,importeBase:'',_totalLeido:50},ctx),[]);
+t('solo desglose: sin aviso',avisosLectura({...base,importeBase:'',desglose:[{base:100,tipo:21}]},ctx),[]);
+t('todo a cero: aviso',avisosLectura({...base,importeBase:'',_totalLeido:0,desglose:[]},ctx),['importe cero']);
+t('factura sin cargo (0,00): aviso, que la revise',avisosLectura({...base,importeBase:'0,00',_totalLeido:0},ctx),['importe cero']);
+t('los demás avisos siguen',avisosLectura({...base,fecha:'2002-01-01',proveedor:'',importeBase:'10,00'},ctx),['fecha 2002-01-01: demasiado antigua','sin proveedor']);
+console.log(fallos?`\n✗ ${fallos} fallos`:'\n✓ batería avisos de lectura: todo verde');
+process.exit(fallos?1:0);

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#131C31" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/app/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/app/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/app/icon-192.png" />
+    <meta name="apple-mobile-web-app-title" content="BH10" />
+    <title>BH10 · Espacio privado</title>
+    <style>html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}</style>
+    <script>window.__BH10_STANDALONE=true;window.__BH10_MULTI=true;</script><script type="module" crossorigin src="/app/assets/app-v408.js"></script><script type="module" crossorigin src="/app/assets/index-v317.js"></script>
+  <link rel="manifest" href="/app/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/app/registerSW.js"></script></head>
+  <body style="margin:0;background:#131C31">
+    <div id="root"></div>
+    <div id="bh-rescate" style="display:none;position:fixed;inset:0;background:#131C31;color:#F1F5F9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;align-items:center;justify-content:center;text-align:center;padding:28px">
+      <div style="max-width:320px">
+        <div style="font-size:30px;font-weight:900;letter-spacing:-1px"><span style="color:#7BF07B">BIO</span><span style="color:#B0E8E8">H</span></div>
+        <div id="bh-rescate-txt" style="font-size:14px;margin-top:14px;line-height:1.5">Actualizando la aplicación…</div>
+        <button id="bh-rescate-btn" style="display:none;margin-top:18px;background:#7BF07B;color:#04120C;border:none;border-radius:999px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer">Reintentar</button>
+      </div>
+    </div>
+    <script>
+    /* Red de seguridad del arranque.
+       Si el programa no llega a pintarse —porque el navegador guardó una versión
+       antigua, porque falta un fichero tras una subida a medias o porque la copia
+       en caché se quedó a mitad—, la app se quedaba EN BLANCO y sin salida: ni
+       login, ni aviso, ni forma de recuperarla desde el propio móvil.
+       Aquí se detecta y se limpia la instalación una vez, sola. */
+    (function () {
+      var LIMITE = 9000, ya = false;
+      function pintado() { var r = document.getElementById('root'); return r && r.childElementCount > 0; }
+      function aviso(txt, conBoton) {
+        var c = document.getElementById('bh-rescate');
+        document.getElementById('bh-rescate-txt').textContent = txt;
+        document.getElementById('bh-rescate-btn').style.display = conBoton ? 'inline-block' : 'none';
+        c.style.display = 'flex';
+      }
+      function limpiar() {
+        var t = [];
+        try { if (window.caches) t.push(caches.keys().then(function (k) { return Promise.all(k.map(function (n) { return caches.delete(n); })); })); } catch (e) {}
+        try { if (navigator.serviceWorker) t.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); } catch (e) {}
+        return Promise.all(t).catch(function () {});
+      }
+      function rescatar(motivo) {
+        if (ya || pintado()) return;
+        ya = true;
+        var intentado = false;
+        try { intentado = sessionStorage.getItem('bh10-rescate') === '1'; } catch (e) {}
+        if (intentado) {
+          // Ya se intentó y sigue sin arrancar: no entrar en bucle de recargas
+          aviso('No se ha podido cargar la aplicación (' + motivo + '). Comprueba la conexión y vuelve a intentarlo.', true);
+          document.getElementById('bh-rescate-btn').onclick = function () {
+            try { sessionStorage.removeItem('bh10-rescate'); } catch (e) {}
+            limpiar().then(function () { location.replace(location.pathname + '?r=' + Date.now()); });
+          };
+          return;
+        }
+        try { sessionStorage.setItem('bh10-rescate', '1'); } catch (e) {}
+        aviso('Actualizando la aplicación…', false);
+        limpiar().then(function () { location.replace(location.pathname + '?r=' + Date.now()); });
+      }
+      // Un script que no carga (fichero que falta tras subir la web)
+      window.addEventListener('error', function (e) {
+        if (e && e.target && e.target.tagName === 'SCRIPT') rescatar('falta un archivo');
+      }, true);
+      // O que carga pero revienta al ejecutarse
+      window.addEventListener('error', function (e) { if (!e.target || !e.target.tagName) setTimeout(function () { rescatar('error al arrancar'); }, 1500); });
+      // O que no pinta nada en un tiempo razonable
+      setTimeout(function () { if (!pintado()) rescatar('tarda demasiado'); }, LIMITE);
+      // Cuando arranca bien, se olvida el intento para la próxima vez
+      var vigila = setInterval(function () {
+        if (pintado()) { clearInterval(vigila); try { sessionStorage.removeItem('bh10-rescate'); } catch (e) {} }
+      }, 400);
+    })();
+    </script>
+  </body>
+</html>

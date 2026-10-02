@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Enviar factura · BIOH GROUP</title>
+<link rel="icon" type="image/png" href="/app/icon-192.png"/>
+<style>
+  :root{ --bg:#0F172A; --sf:#1B2540; --bd:#334155; --tx:#E2E8F0; --mt:#94A3B8; --ac:#7BF07B; --sc:#10B981; --wn:#F59E0B; --dn:#EF4444; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px}
+  .caja{width:100%;max-width:440px}
+  .logo{font-size:30px;font-weight:900;letter-spacing:-1px;text-align:center;margin-bottom:2px}
+  .logo b{color:var(--ac)} .logo i{color:#B0E8E8;font-style:normal}
+  .sub{text-align:center;font-size:11px;color:var(--mt);letter-spacing:.08em;text-transform:uppercase;margin-bottom:22px}
+  .card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:12px}
+  h1{font-size:17px;margin:0 0 4px}
+  p.ayuda{font-size:12px;color:var(--mt);margin:0 0 14px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--mt);margin-bottom:4px}
+  input[type=text],select{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:10px;color:var(--tx);padding:13px 12px;font-size:16px;outline:none}
+  input[type=text]{text-transform:uppercase;letter-spacing:1px;font-family:ui-monospace,monospace}
+  input.libre{text-transform:none;letter-spacing:0;font-family:inherit}
+  select{font-size:15px}
+  button{width:100%;padding:14px;border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;margin-top:12px}
+  .b1{background:var(--ac);color:#04120C}
+  .b2{background:var(--sc);color:#04120C}
+  .bg{background:transparent;color:var(--mt);border:1px solid var(--bd);font-weight:600;font-size:13px}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{border-radius:10px;padding:10px 12px;font-size:12px;margin-top:12px;line-height:1.5}
+  .err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);color:#FCA5A5}
+  .ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.4);color:#6EE7B7}
+  .info{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#FCD34D}
+  .drop{border:2px dashed var(--bd);border-radius:12px;padding:22px 14px;text-align:center;cursor:pointer;margin-top:6px}
+  .drop.hay{border-color:var(--sc);background:rgba(16,185,129,.07)}
+  .drop span{font-size:12px;color:var(--mt)}
+  .pie{text-align:center;font-size:10px;color:#475569;margin-top:18px;line-height:1.6}
+  .oculto{display:none}
+  .fila{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mt);margin-top:8px}
+  .cuenta{font-size:10px;color:var(--mt);text-align:right;margin-top:6px}
+  .aviso{background:#1B2540;border:1px solid #334155;border-radius:11px;padding:0;margin:14px 0 10px;overflow:hidden}
+  .aviso h2{font-size:13px;margin:0;padding:12px 14px;background:rgba(56,189,248,.1);border-bottom:1px solid #334155;color:#38BDF8}
+  .texto{max-height:210px;overflow-y:auto;padding:12px 14px;font-size:12.5px;line-height:1.6;-webkit-overflow-scrolling:touch}
+  .texto h3{font-size:12px;margin:14px 0 3px;color:#E2E8F0}
+  .texto p{margin:0 0 8px;color:#CBD5E1}
+  .barra{height:4px;background:#334155}
+  .barra>div{height:100%;width:0;background:#38BDF8;transition:width .15s}
+  .pieL{padding:10px 14px;font-size:11px;border-top:1px solid #334155}
+  .marca{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;cursor:pointer;border-top:1px solid #334155}
+  .marca input{width:21px;height:21px;flex-shrink:0;margin:1px 0 0;accent-color:#7BF07B}
+  .marca.off{opacity:.45;cursor:not-allowed}
+  .marca span{font-size:12.5px;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="caja">
+  <div class="logo"><b>BIO</b><i>H</i></div>
+  <div class="sub">Portal de proveedores</div>
+
+  <div class="card" id="paso1">
+    <h1>Enviar una factura</h1>
+    <p class="ayuda">Rellena tus datos, elige la empresa a la que facturas y adjunta el documento. Quedará pendiente de validación por administración.</p>
+
+    <label>CIF / NIF</label>
+    <input type="text" id="cif" inputmode="text" autocomplete="off" placeholder="B12345678" maxlength="12"/>
+
+    <label style="margin-top:14px">Nombre de tu empresa</label>
+    <input type="text" id="nombre" class="libre" autocomplete="organization" placeholder="Construcciones Ejemplo, S.L." maxlength="70"/>
+
+    <label style="margin-top:14px">Empresa a la que facturas</label>
+    <select id="empresa"></select>
+
+    <label style="margin-top:14px">Archivo de la factura</label>
+    <div class="drop" id="drop">
+      <input type="file" id="file" accept="image/*,.pdf,application/pdf" style="display:none"/>
+      <div id="dropTxt"><b style="color:var(--ac)">Seleccionar archivo</b><br/><span>PDF o foto · máximo 700 KB</span></div>
+    </div>
+
+    <div class="aviso">
+      <h2>&#128274; Informaci&oacute;n sobre protecci&oacute;n de datos</h2>
+      <div class="texto" id="texto"></div>
+      <div class="barra"><div id="progreso"></div></div>
+      <div class="pieL" id="pieLectura" style="color:#F59E0B">Despl&aacute;zate hasta el final para poder continuar</div>
+      <label class="marca off" id="marcaInfo">
+        <input type="checkbox" id="chkInfo" disabled>
+        <span>He le&iacute;do la informaci&oacute;n sobre protecci&oacute;n de datos.</span>
+      </label>
+    </div>
+
+    <button class="b2" id="btnEnviar" disabled>Enviar factura</button>
+    <div id="msg1"></div>
+  </div>
+
+  <div class="card oculto" id="paso3">
+    <h1 style="color:var(--sc)">✅ Factura recibida</h1>
+    <p class="ayuda" id="okTxt"></p>
+    <button class="b1" id="btnOtra">Enviar otra factura</button>
+  </div>
+
+  <div class="pie">
+    Este envío queda pendiente de validación por nuestro departamento de administración.<br/>
+    No sustituye al envío por los canales habituales si así se te ha indicado.
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const CFG = {
+  apiKey: "AIzaSyB6Nvqq6CrZGjly0V8iXg872Z3bV7aQjPU",
+  authDomain: "b10h-facturas.firebaseapp.com",
+  projectId: "b10h-facturas",
+  storageBucket: "b10h-facturas.firebasestorage.app",
+  messagingSenderId: "940248180337",
+  appId: "1:940248180337:web:989686e6c5fcb80b1c9dd0"
+};
+const db = getFirestore(initializeApp(CFG));
+
+const MAX_BYTES = 700 * 1024;
+const $ = (id) => document.getElementById(id);
+const normCif = (s) => String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const pinta = (el, texto, clase) => { el.innerHTML = texto ? '<div class="msg '+clase+'">'+texto+'</div>' : ''; };
+
+let archivo = null, UID = '', EMPRESAS = [];
+
+// El enlace corto funciona solo: la configuración del portal es pública
+(async () => {
+  const forzado = new URLSearchParams(location.search).get('u');
+  try {
+    const s = await getDoc(doc(db, 'portal', 'default'));
+    if (s.exists()) {
+      const d = s.data() || {};
+      UID = forzado || d.uid || '';
+      EMPRESAS = Array.isArray(d.empresas) ? d.empresas : [];
+    } else if (forzado) { UID = forzado; }
+  } catch (e) { if (forzado) UID = forzado; console.error(e); }
+
+  const sel = $('empresa');
+  sel.innerHTML = '';
+  if (!EMPRESAS.length) EMPRESAS = [{ sub: '', nombre: 'BIOH GROUP' }];
+  EMPRESAS.forEach(x => {
+    const o = document.createElement('option');
+    o.value = x.sub || ''; o.textContent = x.nombre || 'Empresa';
+    sel.appendChild(o);
+  });
+  if (!UID) pinta($('msg1'), 'El portal no está disponible ahora mismo. Inténtalo más tarde o envía tu factura por correo.', 'err');
+})();
+
+$('cif').addEventListener('input', e => { e.target.value = normCif(e.target.value); });
+
+$('drop').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = ''; // permite volver a elegir el mismo archivo (p. ej. tras rechazo por tamaño)
+  pinta($('msg1'), '', '');
+  const reset = () => {
+    archivo = null; $('drop').classList.remove('hay');
+    $('dropTxt').innerHTML = '<b style="color:var(--ac)">Seleccionar archivo</b><br/><span>PDF o foto · máximo 700 KB</span>';
+  };
+  if (!f) { reset(); return; }
+  if (f.size > MAX_BYTES) {
+    pinta($('msg1'), 'El archivo pesa ' + Math.round(f.size/1024) + ' KB y el máximo son 700 KB. Envía una foto del documento o comprime el PDF.', 'err');
+    reset(); return;
+  }
+  archivo = f;
+  $('drop').classList.add('hay');
+  $('dropTxt').innerHTML = '<b style="color:var(--sc)">✓ ' + f.name.slice(0,42) + '</b><br/><span>' + Math.round(f.size/1024) + ' KB</span>';
+});
+
+const b64De = (f) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(String(r.result).split(',')[1]);
+  r.onerror = rej;
+  r.readAsDataURL(f);
+});
+
+// ── Protección de datos ──
+// El proveedor también entrega datos personales al mandar su factura: nombre,
+// CIF y una cuenta bancaria. La obligación de informar es la misma.
+const AVISO_VERSION = 'prov-2026-08-1';
+const AVISO_HTML = [
+'<h3>¿Quién trata tus datos?</h3>',
+'<p><b>BIG HOUSE 2010, S.L.</b>, con NIF <b>B45731981</b> y domicilio en <b>Calle Neón 12, 45200 Illescas (Toledo)</b>. Para cualquier cuestión sobre tus datos: <b>greenbighouse@gmail.com</b>.</p>',
+'<h3>¿Para qué?</h3>',
+'<p>Para registrar y contabilizar tu factura, comprobarla, pagarte mediante transferencia y cumplir nuestras obligaciones contables y fiscales. Si eres autónomo, también para practicar e ingresar la retención de IRPF que corresponda.</p>',
+'<h3>¿Con qué derecho?</h3>',
+'<p>Por la relación comercial que nos une (artículo 6.1.b del RGPD) y porque la ley nos obliga a registrar las facturas recibidas y conservarlas (artículo 6.1.c). No te pedimos permiso porque no procede: sin estos datos no podríamos pagarte ni cumplir con Hacienda.</p>',
+'<h3>¿Cuánto tiempo los guardamos?</h3>',
+'<p>Mientras dure la relación y, después, los plazos legales: <b>seis años</b> la documentación mercantil (Código de Comercio) y <b>cuatro años</b> en materia tributaria.</p>',
+'<h3>¿A quién se los damos?</h3>',
+'<p>A nuestra asesoría fiscal y contable, a la entidad bancaria para ordenar el pago y a la Administración tributaria cuando la ley lo exige. No los vendemos ni los cedemos a nadie más.</p>',
+'<h3>¿Qué puedes hacer tú?</h3>',
+'<p>Pedirnos acceder a tus datos, rectificarlos, suprimirlos, limitar su uso, oponerte o llevártelos a otro sitio, escribiéndonos y acreditando quién eres. Y si crees que no te atendemos como debemos, puedes reclamar ante la <b>Agencia Española de Protección de Datos</b> (www.aepd.es).</p>',
+'<p style="color:#94A3B8;font-size:11px">Versión del aviso: ' + AVISO_VERSION + '</p>'
+].join('');
+
+const huellaTxt = async (t) => {
+  try {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('').slice(0,32);
+  } catch (e) { return ''; }
+};
+
+$('texto').innerHTML = AVISO_HTML;
+let leidoHasta = 0, llegoAlFinal = false, tLectura = 0;
+const abiertoEn = Date.now();
+const cajaTexto = $('texto');
+cajaTexto.addEventListener('scroll', () => {
+  const alto = cajaTexto.scrollHeight - cajaTexto.clientHeight;
+  const pct = alto <= 4 ? 100 : Math.min(100, Math.round(cajaTexto.scrollTop / alto * 100));
+  leidoHasta = Math.max(leidoHasta, pct);
+  $('progreso').style.width = leidoHasta + '%';
+  if (leidoHasta >= 97 && !llegoAlFinal) {
+    llegoAlFinal = true;
+    tLectura = Math.round((Date.now() - abiertoEn) / 1000);
+    $('chkInfo').disabled = false;
+    $('marcaInfo').classList.remove('off');
+    $('pieLectura').style.color = '#7BF07B';
+    $('pieLectura').textContent = '\u2713 Has llegado al final. Ya puedes marcar la casilla.';
+  }
+});
+setTimeout(() => {
+  if (cajaTexto.scrollHeight - cajaTexto.clientHeight <= 4 && !llegoAlFinal) {
+    llegoAlFinal = true; leidoHasta = 100;
+    $('progreso').style.width = '100%';
+    $('chkInfo').disabled = false;
+    $('marcaInfo').classList.remove('off');
+    $('pieLectura').textContent = '\u2713 Ya puedes marcar la casilla.';
+    $('pieLectura').style.color = '#7BF07B';
+  }
+}, 700);
+$('chkInfo').addEventListener('change', () => { $('btnEnviar').disabled = !$('chkInfo').checked; });
+
+$('btnEnviar').addEventListener('click', async () => {
+  const cif = normCif($('cif').value);
+  const nombre = String($('nombre').value || '').trim();
+  pinta($('msg1'), '', '');
+  if (!UID) { pinta($('msg1'), 'El portal no está disponible ahora mismo.', 'err'); return; }
+  if (cif.length < 8) { pinta($('msg1'), 'Escribe tu CIF o NIF completo (8 o 9 caracteres, sin guiones).', 'err'); return; }
+  if (nombre.length < 3) { pinta($('msg1'), 'Escribe el nombre de tu empresa.', 'err'); return; }
+  if (!archivo) { pinta($('msg1'), 'Adjunta el archivo de la factura.', 'err'); return; }
+
+  $('btnEnviar').disabled = true; $('btnEnviar').textContent = 'Enviando…';
+  try {
+    const b64 = await b64De(archivo);
+    const sub = $('empresa').value || '';
+    const id = 'bz' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const destino = sub ? ['empresas', UID, 'sub', sub, 'buzon', id] : ['empresas', UID, 'buzon', id];
+    await setDoc(doc(db, ...destino), {
+      cif, nombre: nombre.slice(0, 70),
+      archivo: b64,
+      mime: archivo.type || 'application/octet-stream',
+      nombreArchivo: String(archivo.name || 'factura').slice(0, 80),
+      bytes: archivo.size,
+      estado: 'pendiente',
+      rgpd: {
+        version: AVISO_VERSION,
+        huellaTexto: await huellaTxt(AVISO_HTML),
+        leidoHastaPct: leidoHasta,
+        segundosEnPantalla: tLectura || Math.round((Date.now() - abiertoEn) / 1000),
+        informado: true,
+        cuando: new Date().toISOString(),
+        navegador: String(navigator.userAgent || '').slice(0, 140)
+      },
+      creado: serverTimestamp()
+    });
+    const emp = $('empresa').options[$('empresa').selectedIndex];
+    $('okTxt').textContent = 'Hemos recibido tu factura para ' + (emp ? emp.textContent : 'la empresa seleccionada') + '. Quedará pendiente de validación por administración. Gracias.';
+    $('paso1').classList.add('oculto');
+    $('paso3').classList.remove('oculto');
+  } catch (e) {
+    console.error(e);
+    pinta($('msg1'), 'No se pudo enviar. Comprueba tu conexión e inténtalo de nuevo.', 'err');
+    $('btnEnviar').disabled = false;
+  }
+  $('btnEnviar').textContent = 'Enviar factura';
+});
+
+$('btnOtra').addEventListener('click', () => location.reload());
+</script>
+
+<script type="module">
+/* App Check (reCAPTCHA v3). Si no puede activarse, la página sigue funcionando. */
+try{
+  const a=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+  const c=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');
+  for(let k=0;k<40&&!a.getApps().length;k++)await new Promise(r=>setTimeout(r,100));
+  if(a.getApps().length){
+    c.initializeAppCheck(a.getApp(),{provider:new c.ReCaptchaV3Provider('6Lc5AZMtAAAAAKBCZlXQZpQjF2PtBtQRRUod8Jx-'),isTokenAutoRefreshEnabled:true});
+  }
+}catch(e){}
+</script>
+</body>
+</html>

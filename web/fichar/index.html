@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F172A">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Fichar &middot; BH10</title>
+<style>
+  :root{--bg:#0F172A;--sf:#1B2540;--bd:#334155;--tx:#E2E8F0;--mt:#94A3B8;--ac:#7BF07B;--dn:#EF4444;--wn:#F59E0B;--in:#38BDF8}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+  .caja{max-width:460px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--mt);font-size:12px;margin-bottom:16px}
+  label{display:block;margin-bottom:12px}
+  label>span{display:block;font-size:11px;color:var(--mt);margin-bottom:4px}
+  input,select{width:100%;background:var(--sf);border:1px solid var(--bd);border-radius:10px;color:var(--tx);padding:13px;font-size:17px;outline:none;font-family:inherit}
+  input:focus{border-color:var(--in)}
+  button{width:100%;padding:15px;border-radius:12px;border:none;font-size:15px;font-weight:800;cursor:pointer}
+  .primario{background:var(--ac);color:#04120C}
+  .primario:disabled{opacity:.4;cursor:not-allowed}
+  .sec{background:transparent;border:1px solid var(--bd);color:var(--mt);font-size:13px;padding:12px}
+  .msg{border-radius:10px;padding:11px 13px;font-size:13px;margin:10px 0;line-height:1.45}
+  .err{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.5);color:#FCA5A5}
+  .ok{background:rgba(123,240,123,.12);border:1px solid rgba(123,240,123,.4);color:var(--ac)}
+  .inf{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.4);color:#BAE6FD}
+  .oculto{display:none}
+  .tarj{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:12px}
+  .reloj{font-size:44px;font-weight:800;letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums;margin:2px 0 0}
+  .fecha{text-align:center;color:var(--mt);font-size:12px;margin-bottom:14px;text-transform:capitalize}
+  .estado{text-align:center;font-size:13px;margin-bottom:14px}
+  .grande{padding:22px;font-size:19px;letter-spacing:.01em}
+  .entrar{background:var(--ac);color:#04120C}
+  .salir{background:var(--wn);color:#2A1A00}
+  .pin{display:flex;gap:9px;justify-content:center;margin:14px 0}
+  .pin input{width:44px;text-align:center;font-size:22px;padding:12px 0;font-variant-numeric:tabular-nums}
+  .fila{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(51,65,85,.5);font-size:13px}
+  .fila:last-child{border-bottom:none}
+  .fila .h{font-variant-numeric:tabular-nums;font-weight:700}
+  .dia{font-size:11px;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 2px;font-weight:700}
+  .prev{font-size:11px;color:var(--mt)}
+  .nota{font-size:11px;color:var(--mt);line-height:1.5;margin-top:14px}
+  .cab{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .cab .n{flex:1;min-width:0;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cab button{width:auto;padding:7px 11px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--mt);font-weight:600}
+  .marca{font-size:10px;color:var(--mt);text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="caja">
+
+  <div id="pCarga"><h1>Fichar</h1><div class="sub">Cargando&hellip;</div></div>
+
+  <!-- 1. Teléfono -->
+  <div id="pTel" class="oculto">
+    <h1>Fichar</h1>
+    <div class="sub">Escribe tu m&oacute;vil. Te mandamos un c&oacute;digo por SMS <b>solo esta vez</b>.</div>
+    <div class="tarj">
+      <label><span>Tu m&oacute;vil</span><input id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="612 34 56 78"></label>
+      <div id="msgTel"></div>
+      <div id="recaptcha"></div>
+      <button class="primario" id="btnTel">Enviar c&oacute;digo</button>
+    </div>
+    <div class="nota">Tu m&oacute;vil debe estar dado de alta por la empresa. Si te da error, av&iacute;sale a administraci&oacute;n.</div>
+  </div>
+
+  <!-- 2. Código SMS -->
+  <div id="pCod" class="oculto">
+    <h1>C&oacute;digo</h1>
+    <div class="sub" id="subCod">Te hemos mandado un SMS.</div>
+    <div class="tarj">
+      <label><span>C&oacute;digo de 6 cifras</span><input id="cod" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="font-size:26px;text-align:center;letter-spacing:.3em"></label>
+      <div id="msgCod"></div>
+      <button class="primario" id="btnCod">Continuar</button>
+      <button class="sec" id="btnOtroTel" style="margin-top:8px">Cambiar de n&uacute;mero</button>
+    </div>
+  </div>
+
+  <!-- 3. Crear PIN -->
+  <div id="pPin" class="oculto">
+    <h1 id="hPin">Crea tu PIN</h1>
+    <div class="sub" id="subPin">Seis cifras que solo sepas t&uacute;. Te lo pedir&aacute; cada vez que fiches.</div>
+    <div class="tarj">
+      <div class="pin" id="cajaPin"></div>
+      <div id="msgPin"></div>
+      <button class="primario" id="btnPin">Guardar</button>
+    </div>
+    <div class="nota">No uses tu fecha de nacimiento ni 123456. Si lo olvidas, se recupera con un SMS.</div>
+  </div>
+
+  <!-- 4. Fichar -->
+  <div id="pFichar" class="oculto">
+    <div class="cab">
+      <span class="n" id="quien">&nbsp;</span>
+      <button id="btnSalirSesion">Salir</button>
+    </div>
+    <div class="tarj">
+      <div class="reloj" id="reloj">--:--</div>
+      <div class="fecha" id="fecha">&nbsp;</div>
+      <div class="estado" id="estado">&nbsp;</div>
+      <div id="msgFichar"></div>
+      <button class="grande entrar" id="btnFichar">Fichar entrada</button>
+    </div>
+    <div class="tarj oculto" id="tarjAviso">
+      <div style="font-size:12.5px;margin-bottom:8px">🔔 <b>Que no se te olvide fichar</b></div>
+      <div style="font-size:11px;color:var(--mt);line-height:1.5;margin-bottom:9px" id="txtAviso">
+        Activa los avisos y te recordamos fichar si a tu hora no lo has hecho.
+      </div>
+      <button class="sec" id="btnAviso">Activar avisos</button>
+    </div>
+
+    <div class="tarj">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <b style="font-size:13px">Hoy</b>
+        <span class="prev" id="prevHoy">&nbsp;</span>
+      </div>
+      <div id="listaHoy"><div class="prev">Sin fichajes todav&iacute;a.</div></div>
+    </div>
+    <div class="tarj oculto" id="tarjRect">
+      <b style="font-size:13px">✍️ Correcciones de la empresa</b>
+      <div style="font-size:10.5px;color:var(--mt);margin:3px 0 8px;line-height:1.45">
+        Tus fichajes no se han modificado. Estas anotaciones se han a&ntilde;adido al lado.
+        Si alguna no te cuadra, d&iacute;selo a administraci&oacute;n.
+      </div>
+      <div id="listaRect"></div>
+    </div>
+
+    <div class="tarj">
+      <b style="font-size:13px">Mi historial</b>
+      <div id="historial" style="margin-top:6px"><div class="prev">Cargando&hellip;</div></div>
+    </div>
+    <div class="marca">BH10 &middot; Registro de jornada</div>
+  </div>
+
+  <!-- PIN de entrada -->
+  <div id="pEntrar" class="oculto">
+    <h1 id="hEntrar">Hola</h1>
+    <div class="sub">Escribe tu PIN para fichar.</div>
+    <div class="tarj">
+      <div class="pin" id="cajaPin2"></div>
+      <div id="msgEntrar"></div>
+      <button class="sec" id="btnOlvido" style="margin-top:6px">He olvidado el PIN</button>
+    </div>
+  </div>
+
+</div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// El mismo programa que manda los avisos responde también si un número está
+// dado de alta. Vive en Cloudflare porque para consultarlo hace falta leer
+// Firestore con permisos que el navegador no tiene ni debe tener.
+const COMPROBADOR = 'https://bh10-aviso-fichaje.jesacam.workers.dev/permitido';
+
+const CFG = {
+  apiKey: "AIzaSyB6Nvqq6CrZGjly0V8iXg872Z3bV7aQjPU",
+  authDomain: "b10h-facturas.firebaseapp.com",
+  projectId: "b10h-facturas",
+  storageBucket: "b10h-facturas.firebasestorage.app",
+  messagingSenderId: "940248180337",
+  appId: "1:940248180337:web:989686e6c5fcb80b1c9dd0"
+};
+const app = initializeApp(CFG);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = (id) => document.getElementById(id);
+const pinta = (el, t, c) => { el.innerHTML = t ? '<div class="msg ' + c + '">' + t + '</div>' : ''; };
+const ver = (id) => { ['pCarga','pTel','pCod','pPin','pFichar','pEntrar'].forEach(p => $(p).classList.toggle('oculto', p !== id)); };
+const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ── Utilidades ──
+const normTel = (t) => {
+  let s = String(t || '').replace(/[^\d+]/g, '');
+  if (s.startsWith('00')) s = '+' + s.slice(2);
+  if (!s.startsWith('+')) s = (s.length === 9 ? '+34' : '+') + s;
+  return s;
+};
+const soloDigitos = (t) => String(t || '').replace(/\D/g, '');
+const sha = async (txt) => {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(txt)));
+  return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
+};
+const hhmm = (d) => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+const fechaISO = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const fechaLarga = (d) => d.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+
+// El terminal se recuerda con un secreto propio: sin él, saber el PIN no basta.
+// No es infalible —una web no puede leer el número de serie del móvil— pero
+// impide que alguien fiche por otro desde su propio teléfono.
+const CLAVE_DISP = 'bh10-fichar-disp';
+const dameSecretoDispositivo = () => {
+  let s = '';
+  try { s = localStorage.getItem(CLAVE_DISP) || ''; } catch (e) {}
+  if (!s) {
+    const n = crypto.getRandomValues(new Uint8Array(24));
+    s = Array.from(n).map(x => x.toString(16).padStart(2,'0')).join('');
+    try { localStorage.setItem(CLAVE_DISP, s); } catch (e) {}
+  }
+  return s;
+};
+
+// ── Casillas del PIN ──
+const montaPin = (caja, alCompletar) => {
+  caja.innerHTML = '';
+  const campos = [];
+  for (let i = 0; i < 6; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'tel'; inp.inputMode = 'numeric'; inp.maxLength = 1;
+    inp.autocomplete = 'off';
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
+      if (inp.value && i < 5) campos[i+1].focus();
+      const v = campos.map(c => c.value).join('');
+      if (v.length === 6) alCompletar(v);
+    });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) campos[i-1].focus();
+    });
+    caja.appendChild(inp); campos.push(inp);
+  }
+  return {
+    valor: () => campos.map(c => c.value).join(''),
+    limpiar: () => { campos.forEach(c => c.value = ''); campos[0].focus(); },
+    foco: () => campos[0].focus(),
+  };
+};
+
+let ficha = null;        // documento del trabajador
+let miUid = '';
+let confirmacion = null; // resultado del SMS
+// ── EL RECAPTCHA ──
+// Firebase lo exige para verificar por SMS desde la web: no se puede quitar.
+// Pero se prepara al ABRIR la página, no al pulsar el botón, para que esté
+// listo cuando haga falta. Y si el invisible no arranca —conexión mala, un
+// bloqueador— se pasa al de la casilla, que es más simple y aguanta más.
+let recaptcha = null;
+let modoCasilla = false;
+const prepararRecaptcha = async () => {
+  if (recaptcha) return true;
+  try {
+    recaptcha = new RecaptchaVerifier(auth, 'recaptcha',
+      modoCasilla ? { size: 'normal', hl: 'es' } : { size: 'invisible' });
+    await recaptcha.render();
+    return true;
+  } catch (e) {
+    try { if (recaptcha) recaptcha.clear(); } catch (x) {}
+    recaptcha = null;
+    return false;
+  }
+};
+const pasarACasilla = async () => {
+  modoCasilla = true;
+  $('recaptcha').style.margin = '10px 0';
+  const listo = await prepararRecaptcha();
+  if (listo) pinta($('msgTel'), 'Marca la casilla de aqu&iacute; abajo y vuelve a pulsar <b>Enviar c&oacute;digo</b>.', 'inf');
+  return listo;
+};
+let registrosHoy = [];
+
+// ── Reloj ──
+setInterval(() => {
+  const d = new Date();
+  const r = $('reloj'); if (r) r.textContent = hhmm(d);
+  const f = $('fecha'); if (f) f.textContent = fechaLarga(d);
+}, 1000);
+(() => { const d = new Date(); $('reloj').textContent = hhmm(d); $('fecha').textContent = fechaLarga(d); })();
+
+// ══════════ 1. TELÉFONO ══════════
+$('btnTel').addEventListener('click', async () => {
+  const tel = normTel($('tel').value);
+  if (!/^\+\d{9,15}$/.test(tel)) { pinta($('msgTel'), 'Ese número no parece correcto.', 'err'); return; }
+  $('btnTel').disabled = true; $('btnTel').textContent = 'Comprobando…';
+  pinta($('msgTel'), '', '');
+
+  // Se pregunta ANTES de gastar un SMS si ese número está dado de alta.
+  // Firebase no lo sabe: manda el SMS a cualquier número que le pidas, así que
+  // el filtro es nuestro. Si el comprobador no responde se sigue adelante: el
+  // que manda de verdad es el alta, que se vuelve a mirar después de verificar,
+  // y un fallo de red no puede dejar a nadie sin fichar.
+  try {
+    const r = await fetch(COMPROBADOR + '?tel=' + encodeURIComponent(tel.replace('+', '')),
+      { cache: 'no-store' });
+    const j = await r.json();
+    if (j && j.ok === false && j.motivo !== 'error') {
+      pinta($('msgTel'), j.motivo === 'formato'
+        ? 'Ese n&uacute;mero no parece correcto.'
+        : 'Ese m&oacute;vil no est&aacute; dado de alta. Av&iacute;sale a administraci&oacute;n para que lo registre, y despu&eacute;s vuelve a intentarlo.', 'err');
+      $('btnTel').disabled = false; $('btnTel').textContent = 'Enviar código';
+      return;
+    }
+  } catch (e) { /* sin respuesta: se sigue, ya se comprobará luego */ }
+
+  $('btnTel').textContent = 'Enviando…';
+  if (!recaptcha) {
+    const listo = await prepararRecaptcha();
+    if (!listo) {
+      // Segundo intento con la casilla, que es la que aguanta cuando la
+      // invisible no arranca
+      const conCasilla = await pasarACasilla();
+      if (!conCasilla) {
+        pinta($('msgTel'), 'No se ha podido cargar la comprobaci&oacute;n de seguridad. Comprueba la conexi&oacute;n, o abre la p&aacute;gina en Chrome o Safari sin bloqueador.', 'err');
+      }
+      $('btnTel').disabled = false; $('btnTel').textContent = 'Enviar código';
+      return;
+    }
+  }
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    confirmacion = await signInWithPhoneNumber(auth, tel, recaptcha);
+    $('subCod').innerHTML = 'Te hemos mandado un SMS al <b>' + esc(tel) + '</b>.';
+    ver('pCod'); $('cod').focus();
+  } catch (e) {
+    const c = String((e && e.code) || e);
+    let m = 'No se pudo enviar el SMS. Inténtalo dentro de un rato.';
+    if (/admin-restricted-operation/.test(c))
+      m = 'Todav&iacute;a no se pueden crear cuentas nuevas. <b>No es cosa tuya</b>: av&iacute;sale a administraci&oacute;n.';
+    else if (/operation-not-allowed|billing-not-enabled/.test(c))
+      m = 'El env&iacute;o de SMS no est&aacute; activado todav&iacute;a. <b>No es cosa tuya</b>: av&iacute;sale a administraci&oacute;n.';
+    else if (/invalid-phone-number/.test(c))
+      m = 'Ese n&uacute;mero no parece correcto. Escr&iacute;belo sin espacios ni prefijo, as&iacute;: 612345678';
+    else if (/too-many-requests/.test(c))
+      m = 'Se han hecho demasiados intentos. Espera un rato y vuelve a probar.';
+    else if (/quota-exceeded/.test(c))
+      m = 'Se han agotado los SMS de hoy. Av&iacute;sale a administraci&oacute;n.';
+    else if (/captcha/.test(c))
+      m = 'No se pudo comprobar que eres una persona. Recarga la p&aacute;gina y prueba otra vez.';
+    else if (/network/.test(c))
+      m = 'Sin conexi&oacute;n. Comprueba los datos o el wifi.';
+    else if (/unauthorized-domain/.test(c))
+      m = 'Esta direcci&oacute;n no est&aacute; autorizada. <b>No es cosa tuya</b>: av&iacute;sale a administraci&oacute;n.';
+    pinta($('msgTel'), m + '<div style="font-size:10px;opacity:.6;margin-top:4px">' + esc(c) + '</div>', 'err');
+    // Un verificador ya usado no vale para el siguiente intento
+    try { if (recaptcha) { recaptcha.clear(); } } catch (x) {}
+    recaptcha = null;
+    if (/captcha|network|internal/.test(c)) pasarACasilla();
+  }
+  $('btnTel').disabled = false; $('btnTel').textContent = 'Enviar código';
+});
+$('btnOtroTel').addEventListener('click', () => { confirmacion = null; ver('pTel'); });
+
+// ══════════ 2. CÓDIGO ══════════
+$('btnCod').addEventListener('click', async () => {
+  const c = soloDigitos($('cod').value);
+  if (c.length !== 6) { pinta($('msgCod'), 'El código son 6 cifras.', 'err'); return; }
+  if (!confirmacion) { ver('pTel'); return; }
+  $('btnCod').disabled = true; $('btnCod').textContent = 'Comprobando…';
+  try {
+    await confirmacion.confirm(c);
+    // onAuthStateChanged sigue desde aquí
+  } catch (e) {
+    pinta($('msgCod'), /invalid-verification-code/.test(String(e.code || e))
+      ? 'Ese código no es correcto.' : 'No se pudo comprobar: ' + (e.code || e), 'err');
+  }
+  $('btnCod').disabled = false; $('btnCod').textContent = 'Continuar';
+});
+
+// ══════════ SESIÓN ══════════
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { ver('pTel'); prepararRecaptcha(); return; }
+  miUid = user.uid;
+  try {
+    const s = await getDoc(doc(db, 'fichajes', miUid));
+    if (s.exists()) {
+      ficha = s.data() || {};
+      await entrarConPin();
+      return;
+    }
+    // Primera vez: se busca su alta por el teléfono verificado
+    const tel = soloDigitos(user.phoneNumber || '');
+    const a = await getDoc(doc(db, 'altasFichaje', tel));
+    if (!a.exists()) {
+      pinta($('msgTel'), 'Ese número no está dado de alta. Pídeselo a administración y vuelve a intentarlo.', 'err');
+      await signOut(auth); ver('pTel'); return;
+    }
+    const alta = a.data() || {};
+    ficha = { empresaUid: alta.empresaUid, empleadoId: alta.empleadoId || '',
+      nombre: alta.nombre || '', empresa: alta.empresa || '', telefono: tel,
+      pinHash: '', dispHash: '', alta: new Date().toISOString() };
+    ver('pPin');
+    $('hPin').textContent = 'Hola, ' + String(ficha.nombre || '').split(/[\s,]+/)[0];
+    pin1.limpiar();
+  } catch (e) {
+    pinta($('msgTel'), 'No se pudo entrar: ' + ((e && e.code) || e), 'err');
+    ver('pTel');
+  }
+});
+$('btnSalirSesion').addEventListener('click', async () => {
+  if (!confirm('¿Salir? Tendrás que volver a poner tu PIN.')) return;
+  try { localStorage.removeItem('bh10-fichar-ok'); } catch (e) {}
+  location.reload();
+});
+
+// ══════════ 3. PIN ══════════
+const pin1 = montaPin($('cajaPin'), () => {});
+const pin2 = montaPin($('cajaPin2'), (v) => comprobarPin(v));
+
+$('btnPin').addEventListener('click', async () => {
+  const v = pin1.valor();
+  if (v.length !== 6) { pinta($('msgPin'), 'El PIN son 6 cifras.', 'err'); return; }
+  if (/^(\d)\1{5}$/.test(v) || v === '123456' || v === '654321') {
+    pinta($('msgPin'), 'Ese PIN es demasiado fácil. Pon otro.', 'err'); pin1.limpiar(); return;
+  }
+  $('btnPin').disabled = true;
+  try {
+    ficha.pinHash = await sha(miUid + ':' + v);
+    ficha.dispHash = await sha(miUid + ':' + dameSecretoDispositivo());
+    await setDoc(doc(db, 'fichajes', miUid), ficha);
+    try { localStorage.setItem('bh10-fichar-ok', '1'); } catch (e) {}
+    await abrirFichar();
+  } catch (e) {
+    pinta($('msgPin'), 'No se pudo guardar: ' + ((e && e.code) || e), 'err');
+  }
+  $('btnPin').disabled = false;
+});
+
+const entrarConPin = async () => {
+  // Si el móvil no es el que se registró, se vuelve a verificar por SMS
+  const disp = await sha(miUid + ':' + dameSecretoDispositivo());
+  if (ficha.dispHash && ficha.dispHash !== disp) {
+    pinta($('msgTel'), 'Este móvil no es el que registraste. Verifícalo otra vez con un SMS.', 'inf');
+    await signOut(auth); ver('pTel'); return;
+  }
+  ver('pEntrar');
+  $('hEntrar').textContent = 'Hola, ' + String(ficha.nombre || '').split(/[\s,]+/)[0];
+  pin2.limpiar();
+};
+const comprobarPin = async (v) => {
+  const h = await sha(miUid + ':' + v);
+  if (h !== ficha.pinHash) { pinta($('msgEntrar'), 'PIN incorrecto.', 'err'); pin2.limpiar(); return; }
+  pinta($('msgEntrar'), '', '');
+  await abrirFichar();
+};
+$('btnOlvido').addEventListener('click', async () => {
+  if (!confirm('Se te mandará un SMS para volver a crear el PIN. ¿Seguir?')) return;
+  await signOut(auth); ver('pTel');
+});
+
+// ══════════ 4. FICHAR ══════════
+const abrirFichar = async () => {
+  ver('pFichar');
+  $('quien').textContent = (ficha.nombre || '') + (ficha.empresa ? ' · ' + ficha.empresa : '');
+  await cargarHoy();
+  cargarHistorial();
+  cargarRectificaciones();
+  pintaAviso();
+};
+
+const cargarHoy = async () => {
+  const hoy = fechaISO(new Date());
+  try {
+    const q1 = query(collection(db, 'fichajes', miUid, 'registros'), orderBy('fecha', 'desc'), limit(60));
+    const snap = await getDocs(q1);
+    registrosHoy = snap.docs.map(d => d.data()).filter(x => x && x.fecha === hoy)
+      .sort((a, b) => String(a.hora || '').localeCompare(String(b.hora || '')));
+  } catch (e) { registrosHoy = []; }
+  pintarHoy();
+};
+
+const pintarHoy = () => {
+  const l = $('listaHoy');
+  if (!registrosHoy.length) {
+    l.innerHTML = '<div class="prev">Sin fichajes todavía.</div>';
+  } else {
+    l.innerHTML = registrosHoy.map(r =>
+      '<div class="fila"><span>' + (r.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Salida') + '</span>'
+      + '<span class="h">' + esc(r.hora) + '</span></div>').join('');
+  }
+  const dentro = registrosHoy.length > 0 && registrosHoy[registrosHoy.length - 1].tipo === 'entrada';
+  const b = $('btnFichar');
+  b.textContent = dentro ? 'Fichar salida' : 'Fichar entrada';
+  b.className = 'grande ' + (dentro ? 'salir' : 'entrar');
+  $('estado').innerHTML = dentro
+    ? '<span style="color:var(--ac)">● Dentro desde las ' + esc(registrosHoy[registrosHoy.length-1].hora) + '</span>'
+    : (registrosHoy.length ? '<span style="color:var(--mt)">○ Fuera</span>' : '<span style="color:var(--mt)">Aún no has fichado hoy</span>');
+  // Horas del día
+  let min = 0, ini = null;
+  registrosHoy.forEach(r => {
+    const [h, m] = String(r.hora || '0:0').split(':').map(Number);
+    const t = h * 60 + m;
+    if (r.tipo === 'entrada') ini = t;
+    else if (ini !== null) { min += Math.max(0, t - ini); ini = null; }
+  });
+  $('prevHoy').textContent = min > 0 ? (min / 60).toFixed(2).replace('.', ',') + ' h' : '';
+};
+
+$('btnFichar').addEventListener('click', async () => {
+  const b = $('btnFichar');
+  const dentro = registrosHoy.length > 0 && registrosHoy[registrosHoy.length - 1].tipo === 'entrada';
+  const tipo = dentro ? 'salida' : 'entrada';
+  b.disabled = true; b.textContent = 'Registrando…';
+  pinta($('msgFichar'), '', '');
+  try {
+    const ahora = new Date();
+    // La hora que vale es la del servidor. La del móvil se guarda solo para
+    // poder ver después si alguien la tenía cambiada.
+    const previo = registrosHoy.length ? registrosHoy[registrosHoy.length - 1] : null;
+    const huellaPrev = previo && previo.huella ? previo.huella : '';
+    const base = miUid + '|' + fechaISO(ahora) + '|' + hhmm(ahora) + '|' + tipo + '|' + huellaPrev;
+    const huella = await sha(base);
+    await addDoc(collection(db, 'fichajes', miUid, 'registros'), {
+      tipo, fecha: fechaISO(ahora), hora: hhmm(ahora),
+      horaMovil: ahora.toISOString(), creado: serverTimestamp(),
+      huella, huellaPrev, empresaUid: ficha.empresaUid || '',
+    });
+    pinta($('msgFichar'), '✓ ' + (tipo === 'entrada' ? 'Entrada' : 'Salida') + ' registrada a las ' + hhmm(ahora), 'ok');
+    setTimeout(() => pinta($('msgFichar'), '', ''), 4000);
+    await cargarHoy();
+    cargarHistorial();
+  } catch (e) {
+    pinta($('msgFichar'), 'No se pudo registrar: ' + ((e && e.code) || e) + '. Inténtalo otra vez.', 'err');
+  }
+  b.disabled = false;
+  pintarHoy();
+});
+
+// ══════════ AVISOS DE FICHAJE ══════════
+// La suscripción se guarda en SU ficha, así que el aviso solo puede mandárselo
+// a él. Se pide el permiso cuando ya está dentro, no al abrir: pedirlo antes
+// de que sepa para qué es la forma más segura de que lo deniegue.
+const VAPID = 'BKEK4I2wQ0s-UBuQX9CiETQRbj0X_aXsYDyZPnZVX5UDsBHqodf1oNWaLVqylBxkM0LNNLJ2nVJ0vuJOsv_xi8E';
+const b64aBytes = (b64) => {
+  const s = (b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(s); const u = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i);
+  return u;
+};
+const puedeAvisar = () => ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+const pintaAviso = async () => {
+  const t = $('tarjAviso');
+  if (!puedeAvisar()) {
+    t.classList.remove('oculto');
+    $('txtAviso').innerHTML = 'Este navegador no admite avisos. <b>En iPhone</b>: pulsa Compartir y «Añadir a pantalla de inicio»; desde ahí sí funcionan.';
+    $('btnAviso').classList.add('oculto');
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    t.classList.remove('oculto');
+    $('txtAviso').textContent = 'Has bloqueado los avisos. Puedes permitirlos en los ajustes del navegador.';
+    $('btnAviso').classList.add('oculto');
+    return;
+  }
+  if (ficha && ficha.push && Notification.permission === 'granted') { t.classList.add('oculto'); return; }
+  t.classList.remove('oculto');
+};
+$('btnAviso').addEventListener('click', async () => {
+  const b = $('btnAviso');
+  b.disabled = true; b.textContent = 'Activando…';
+  try {
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') { $('txtAviso').textContent = 'No se han activado. Puedes hacerlo más tarde.'; b.disabled = false; b.textContent = 'Activar avisos'; return; }
+    const reg = await navigator.serviceWorker.register('/fichar/sw.js', { scope: '/fichar/' });
+    await navigator.serviceWorker.ready;
+    const sus = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64aBytes(VAPID) });
+    const j = sus.toJSON();
+    ficha.push = { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, alta: new Date().toISOString() };
+    await setDoc(doc(db, 'fichajes', miUid), ficha);
+    $('txtAviso').textContent = '✓ Avisos activados en este móvil.';
+    b.classList.add('oculto');
+  } catch (e) {
+    $('txtAviso').textContent = 'No se pudieron activar: ' + ((e && e.message) || e);
+    b.disabled = false; b.textContent = 'Activar avisos';
+  }
+});
+
+// ══════════ CORRECCIONES QUE LE HA PUESTO LA EMPRESA ══════════
+// Que las vea es lo que hace legítima la corrección: si la empresa pudiera
+// anotar cosas sobre su jornada sin que él se entere, el registro dejaría de
+// servirle de nada.
+const cargarRectificaciones = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'fichajes', miUid, 'rectificaciones'));
+    const l = snap.docs.map(d => d.data()).filter(Boolean)
+      .sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+    if (!l.length) { $('tarjRect').classList.add('oculto'); return; }
+    $('tarjRect').classList.remove('oculto');
+    $('listaRect').innerHTML = l.slice(0, 20).map(r => {
+      const d = r.fecha ? new Date(r.fecha + 'T12:00').toLocaleDateString('es-ES', { day:'numeric', month:'short' }) : '';
+      return '<div class="fila" style="display:block">'
+        + '<div><b>' + esc(d) + '</b> · ' + esc(r.texto || '') + '</div>'
+        + '<div class="prev">' + esc(r.motivo || '') + (r.autor ? ' — ' + esc(r.autor) : '') + '</div></div>';
+    }).join('');
+  } catch (e) { $('tarjRect').classList.add('oculto'); }
+};
+
+// ══════════ HISTORIAL — SOLO EL SUYO ══════════
+const cargarHistorial = async () => {
+  const cont = $('historial');
+  try {
+    const q1 = query(collection(db, 'fichajes', miUid, 'registros'), orderBy('fecha', 'desc'), limit(120));
+    const snap = await getDocs(q1);
+    const porDia = {};
+    snap.docs.map(d => d.data()).forEach(r => {
+      if (!r || !r.fecha) return;
+      (porDia[r.fecha] = porDia[r.fecha] || []).push(r);
+    });
+    const dias = Object.keys(porDia).sort().reverse().slice(0, 14);
+    const hoy = fechaISO(new Date());
+    const otros = dias.filter(d => d !== hoy);
+    if (!otros.length) { cont.innerHTML = '<div class="prev">Todavía no hay días anteriores.</div>'; return; }
+    cont.innerHTML = otros.map(d => {
+      const rs = porDia[d].sort((a, b) => String(a.hora).localeCompare(String(b.hora)));
+      let min = 0, ini = null;
+      rs.forEach(r => {
+        const [h, m] = String(r.hora || '0:0').split(':').map(Number);
+        const t = h * 60 + m;
+        if (r.tipo === 'entrada') ini = t; else if (ini !== null) { min += Math.max(0, t - ini); ini = null; }
+      });
+      const nombreDia = new Date(d + 'T12:00').toLocaleDateString('es-ES', { weekday:'short', day:'numeric', month:'short' });
+      return '<div class="dia">' + esc(nombreDia) + '</div>'
+        + '<div class="fila"><span class="prev">' + rs.map(r => esc(r.hora)).join(' · ') + '</span>'
+        + '<span class="h">' + (min ? (min/60).toFixed(2).replace('.', ',') + ' h' : '—') + '</span></div>';
+    }).join('');
+  } catch (e) {
+    cont.innerHTML = '<div class="prev">No se pudo cargar: ' + esc((e && e.code) || e) + '</div>';
+  }
+};
+</script>
+
+<script type="module">
+/* App Check (reCAPTCHA v3). Si no puede activarse, la página sigue funcionando. */
+try{
+  const a=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+  const c=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');
+  for(let k=0;k<40&&!a.getApps().length;k++)await new Promise(r=>setTimeout(r,100));
+  if(a.getApps().length){
+    c.initializeAppCheck(a.getApp(),{provider:new c.ReCaptchaV3Provider('6Lc5AZMtAAAAAKBCZlXQZpQjF2PtBtQRRUod8Jx-'),isTokenAutoRefreshEnabled:true});
+  }
+}catch(e){}
+</script>
+</body>
+</html>

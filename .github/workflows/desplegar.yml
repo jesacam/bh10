@@ -1,0 +1,58 @@
+# Despliegue de bh10group.com (web + app) al Worker de Cloudflare «v21».
+# Se lanza a mano (workflow_dispatch) o al empujar a main cambios en web/.
+# Antes de publicar: el bundle comprometido en web/app/assets tiene que ser
+# byte a byte el que sale de compilar facturas/fuente (build reproducible),
+# y las baterías rápidas tienen que estar en verde.
+name: Desplegar bh10group.com
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['web/**', 'facturas/despliegue/**', '.github/workflows/desplegar.yml']
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: facturas/fuente } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: facturas/fuente/package-lock.json }
+      - run: npm ci
+      - name: Nombres sin declarar
+        run: node taller/comprobar_sueltos.mjs
+      - name: Baterías sin datos reales
+        run: node taller/bateria_obra_lectura.mjs
+      - name: Compilar y comparar con el bundle comprometido
+        run: |
+          node taller/build_app.mjs
+          V=$(node -e "import('./src/version.js').then(m=>console.log(m.APP_VERSION))")
+          echo "versión del fuente: $V"
+          for f in web_subir/app/assets/bh10-APP$(echo $V | tr a-z A-Z).js web_subir/app/assets/trozo-$V-*.js; do
+            n=$(basename "$f")
+            if ! cmp -s "$f" "../../web/app/assets/$n"; then echo "::error::$n no coincide con la compilación limpia"; exit 1; fi
+          done
+          grep -q "assets/app-$V.js" ../../web/app/index.html || { echo "::error::app/index.html no apunta a app-$V.js"; exit 1; }
+          grep -q "bh10-APP$(echo $V | tr a-z A-Z).js" ../../web/app/sw.js || { echo "::error::sw.js no precachea el bundle $V"; exit 1; }
+          echo "bundle $V idéntico al comprometido"
+
+  desplegar:
+    needs: comprobar
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: wrangler deploy
+        working-directory: facturas/despliegue
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 deploy --config wrangler.toml
+      - name: Comprobar lo publicado
+        run: |
+          V=$(node -e "import('./facturas/fuente/src/version.js').then(m=>console.log(m.APP_VERSION))")
+          curl -sSf https://bh10group.com/app/ | grep -q "assets/app-$V.js" && echo "app/ sirve $V"
+          curl -sSf -o /dev/null https://bh10group.com/ && echo "portada OK"

@@ -1,0 +1,21 @@
+BH10 FacturaControl · FUENTE MODULAR (desde v314)
+═════════════════════════════════════════════════
+El canónico ya NO es un único TSX: es esta carpeta src/ entera.
+
+  version.js    → APP_VERSION (mantener SIEMPRE en sincronía con el bundle)
+  estetica.jsx  → temas, C (paleta viva) y S (estilos). C y S son objetos
+                  mutables compartidos: aplicarTema los reescribe en caliente.
+  basicos.js    → fmt, fmtK, uid, fechaRegistroDe, fmtDate, parseNum
+  saldos.js     → la verdad del dinero: getSaldo, getEstado, anticipos,
+                  abonos, esAnulada… Panel, pendientes, remesas y exports
+                  beben todos de aquí.
+  ajustes.jsx   → acordeón declarado de Ajustes (SECCIONES_AJ, ConfigAj)
+  ayuda.js      → los 12 módulos de ayuda (109 apartados)
+  app.jsx       → el resto de la aplicación (irá encogiendo por fases)
+
+Compilar: node taller/build_app.mjs   (desde la raíz del paquete de fuente)
+Comprobar nombres sueltos: node taller/comprobar_sueltos.mjs
+Baterías: node taller/bateria_*.mjs
+
+REGLA DE ORO: todo desarrollo nuevo nace en su propio módulo dentro de src/.
+El monolito (app.jsx) solo puede encoger.

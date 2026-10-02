@@ -1,0 +1,286 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  REGLAS DE SEGURIDAD · b10h-facturas · FASE 2 (membresía)
+//
+//  Novedad de esta fase: la colección «miembros». Cada cuenta que actives
+//  desde Master queda apuntada ahí, y con eso puede LEER tu árbol de datos
+//  (y ESCRIBIR solo si le diste algún permiso de admin). Si un usuario no
+//  tiene documento en «miembros», todo funciona exactamente como antes.
+//
+//  Esto es lo que decide quién puede leer y escribir cada cosa. Si falta
+//  una regla, Firestore responde «permission-denied»: no es un fallo de la
+//  app, es que el permiso no existe.
+//
+//  CÓMO PONERLAS
+//  1. console.firebase.google.com → proyecto b10h-facturas
+//  2. Firestore Database → pestaña «Reglas»
+//  3. Borra lo que haya y pega TODO este archivo
+//  4. Publicar
+//
+//  Tarda menos de un minuto en aplicarse.
+// ═══════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Tus datos: solo tú ────────────────────────────────────────────
+    // Todo lo que cuelga de empresas/{tuUid} es tuyo y de nadie más.
+    // Aquí viven facturas, contratos, nóminas, adjuntos, y ahora también
+    // los datos que mandan clientes y proveedores.
+    // ── Claves del almacén (kv): cada una pertenece a un área; escribe quien es admin en ella.
+    // Generado desde src/permisos.js (v364): si cambia el mapa, se regenera y se pega aquí.
+    // v375 · segundo dueño («Master total»): su uid va aquí, entre comillas.
+    // Todo lo que las reglas permiten al dueño se lo permiten también a él.
+    function esDueno(uid) {
+      return request.auth.uid == uid || request.auth.uid in ['PEGA_AQUI_EL_UID_DEL_SEGUNDO_DUENO'];
+    }
+    function permisoDe(uid, area) {
+      return get(/databases/$(database)/documents/miembros/$(request.auth.uid)).data.permisos[area];
+    }
+    function claveEscribible(uid, clave) {
+      return clave in ['bh10-ordenconfig', 'bh10-tema', 'bh10-paleta', 'bh10-altotab', 'bh10-bajartab', 'bh10-sesiones', 'bh10-ping'] ||
+        (clave in ['bh10-fc-v3', 'bh10-fcseed', 'bh10-provcat', 'bh10-clicat', 'bh10-fusignore', 'bh10-clifusignore', 'bh10-vfregistros', 'bh10-vfeventos', 'bh10-diario'] && permisoDe(uid, 'facturas') == 'admin') ||
+        (clave in ['bh10-contratos', 'bh10-obras', 'bh10-viviendas', 'bh10-promocfg', 'bh10-cesiones'] && permisoDe(uid, 'contratos') == 'admin') ||
+        (clave in ['bh10-nominas', 'bh10-payroll-hist', 'bh10-employees', 'bh10-planidx', 'bh10-avisonom'] && permisoDe(uid, 'nominas') == 'admin') ||
+        (clave in ['bh10-polizas', 'bh10-flota', 'bh10-flotaseed'] && permisoDe(uid, 'seguros') == 'admin') ||
+        (clave in ['bh10-remesas', 'bh10-n43', 'bh10-recurrentes', 'bh10-budgets', 'bh10-banca', 'bh10-financiacion', 'bh10-euribor', 'bh10-traspasos'] && permisoDe(uid, 'tesoreria') == 'admin') ||
+        (clave in ['bh10-company-v2', 'bh10-vfcfg', 'bh10-kpis', 'bh10-gmailid', 'bh10-usoia', 'bh10-ultimacopia'] && permisoDe(uid, 'ajustes') == 'admin');
+    }
+    match /empresas/{uid}/kv/{clave} {
+      allow read: if esMiembroDe(uid);
+      allow write: if request.auth != null && (esDueno(uid) || (esMiembroDe(uid) && claveEscribible(uid, clave)));
+    }
+    match /empresas/{uid}/sub/{sub}/kv/{clave} {
+      allow read: if esMiembroDe(uid);
+      allow write: if request.auth != null && (esDueno(uid) || (esMiembroDe(uid) && claveEscribible(uid, clave)));
+    }    // ── Adjuntos de facturas (adj): los lee quien ve facturas; los escribe quien es admin en facturas (v365)
+    match /empresas/{uid}/adj/{doc} {
+      allow read: if request.auth != null && (esDueno(uid) || (esMiembroDe(uid) && permisoDe(uid, 'facturas') in ['lectura', 'admin']));
+      allow write: if request.auth != null && (esDueno(uid) || (esMiembroDe(uid) && permisoDe(uid, 'facturas') == 'admin'));
+    }
+    match /empresas/{uid}/sub/{sub}/adj/{doc} {
+      allow read: if request.auth != null && (esDueno(uid) || (esMiembroDe(uid) && permisoDe(uid, 'facturas') in ['lectura', 'admin']));
+      allow write: if request.auth != null && (esDueno(uid) || (esMiembroDe(uid) && permisoDe(uid, 'facturas') == 'admin'));
+    }
+    // Lo demás de la empresa (subcolecciones que no son kv ni adj): como antes
+    match /empresas/{uid}/{documento=**} {
+      // El dueño, siempre (esta condición se evalúa primero y no cuesta lecturas).
+      allow read, write: if request.auth != null && esDueno(uid);
+      // Un miembro activo puede leer; y escribir solo si es admin en algún área
+      // (el envoltorio deja constancia en el campo «escritor» al activarlo).
+      // v365: ni adj (tiene su regla por área) ni cliDni (solo el dueño) entran aquí
+      // v399: ni privado (token de Gmail del buzón) ni copias (copias de seguridad): solo el dueño
+      allow read: if esMiembroDe(uid) && !(documento[0] in ['adj', 'cliDni', 'privado', 'copias']) && !(documento[0] == 'sub' && documento.size() > 2 && documento[2] in ['adj', 'cliDni']);
+      // v364: las claves kv NO entran aquí (Firestore concede si CUALQUIER match lo permite):
+      // para ellas manda claveEscribible, más arriba.
+      allow write: if esMiembroEscritorDe(uid) && documento[0] != 'kv' && documento[0] != 'adj' && documento[0] != 'privado' && documento[0] != 'copias' && !(documento[0] == 'sub' && documento.size() > 2 && (documento[2] == 'kv' || documento[2] == 'adj'));
+    }
+
+    // ── Membresías (fase 2) ───────────────────────────────────────────
+    // El documento vive en miembros/{uidDelMiembro} y lo escribe el DUEÑO
+    // desde la ventana Master. El miembro solo puede leer EL SUYO: así el
+    // envoltorio sabe, nada más entrar, de qué empresa es y qué permisos tiene.
+    match /miembros/{uidMiembro} {
+      allow get: if request.auth != null && request.auth.uid == uidMiembro;
+      allow list: if false;
+      allow create, update: if request.auth != null
+                            && request.resource.data.dueno == request.auth.uid;
+      allow delete: if request.auth != null
+                    && resource.data.dueno == request.auth.uid;
+    }
+
+    function esMiembroDe(uid) {
+      return request.auth != null
+          && exists(/databases/$(database)/documents/miembros/$(request.auth.uid))
+          && get(/databases/$(database)/documents/miembros/$(request.auth.uid)).data.dueno == uid
+          && get(/databases/$(database)/documents/miembros/$(request.auth.uid)).data.estado == 'activo';
+    }
+    function esMiembroEscritorDe(uid) {
+      return esMiembroDe(uid)
+          && get(/databases/$(database)/documents/miembros/$(request.auth.uid)).data.escritor == true;
+    }
+
+    // ── Portal público: la lista de empresas ──────────────────────────
+    // Cualquiera puede LEERLA (para elegir empresa en el formulario), pero
+    // solo tú puedes cambiarla, desde «Activar / actualizar portal».
+    match /portal/default {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.data.uid == request.auth.uid;
+    }
+
+    // ── Buzón de proveedores ──────────────────────────────────────────
+    // Un proveedor puede DEJAR su factura sin estar registrado, pero no
+    // puede leer el buzón ni modificar lo que ya hay dentro: solo crear.
+    match /empresas/{uid}/buzon/{envio} {
+      allow create: if esEnvioValido();
+    }
+    match /empresas/{uid}/sub/{sub}/buzon/{envio} {
+      allow create: if esEnvioValido();
+    }
+
+    // ── Invitaciones a clientes ───────────────────────────────────────
+    // El enlace personal. Quien tenga el enlace puede leer su invitación
+    // (para que el formulario venga precargado) y marcarla como usada.
+    // No puede crear invitaciones: eso solo lo hace la app.
+    match /invitaciones/{token} {
+      // Leer SOLO con el enlace exacto (get); listar la colección, jamás.
+      allow get: if true;
+      allow list: if false;
+      allow create, delete: if request.auth != null;
+      // Solo se permite marcarla usada; nada más se puede tocar.
+      allow update: if request.auth != null
+                    || (request.resource.data.usado == true
+                        && request.resource.data.destino == resource.data.destino);
+    }
+
+    // ── Datos que mandan los clientes ─────────────────────────────────
+    // Igual que el buzón: pueden crear su envío, no leer los de otros.
+    match /empresas/{uid}/cliRecibidos/{envio} {
+      allow create: if esFichaValida();
+    }
+    match /empresas/{uid}/sub/{sub}/cliRecibidos/{envio} {
+      allow create: if esFichaValida();
+    }
+
+    // ── Solicitudes de derechos ───────────────────────────────────────
+    // Cualquiera puede pedir que le borren sus datos: es un derecho, y no se
+    // le puede exigir estar registrado para ejercerlo. Solo crear, nunca leer.
+    match /empresas/{uid}/cliDerechos/{sol} {
+      allow create: if esSolicitudValida();
+    }
+    match /empresas/{uid}/sub/{sub}/cliDerechos/{sol} {
+      allow create: if esSolicitudValida();
+    }
+    // ── Copias del DNI ────────────────────────────────────────────────
+    // Se pueden entregar, pero NUNCA leer desde fuera. Solo la app, con
+    // sesión iniciada, puede verlas (eso lo cubre la primera regla).
+    match /empresas/{uid}/cliDni/{doc} {
+      allow create: if esImagenValida();
+      // v365 · los DNI solo los lee y borra el dueño (ni los miembros): son el dato más sensible del portal
+      allow read, delete: if request.auth != null && esDueno(uid);
+    }
+    match /empresas/{uid}/sub/{sub}/cliDni/{doc} {
+      allow create: if esImagenValida();
+      // v365 · los DNI solo los lee y borra el dueño (ni los miembros): son el dato más sensible del portal
+      allow read, delete: if request.auth != null && esDueno(uid);
+    }
+
+    // ── Comprobaciones ────────────────────────────────────────────────
+    // Sin esto, cualquiera podría llenar la base de datos con basura.
+    function esEnvioValido() {
+      return request.resource.data.estado == 'pendiente'
+          && request.resource.data.nombre is string
+          && request.resource.data.nombre.size() > 2
+          && request.resource.data.nombre.size() < 120
+          && request.resource.data.bytes is number
+          && request.resource.data.bytes < 800000;
+    }
+    function esFichaValida() {
+      return request.resource.data.estado == 'pendiente'
+          && request.resource.data.nombre is string
+          && request.resource.data.nombre.size() > 2
+          && request.resource.data.nombre.size() < 200
+          && request.resource.data.cif is string
+          && request.resource.data.rgpd.informado == true;
+    }
+    function esSolicitudValida() {
+      return request.resource.data.estado == 'pendiente'
+          && request.resource.data.nombre is string
+          && request.resource.data.nombre.size() > 2
+          && request.resource.data.nombre.size() < 200
+          && request.resource.data.dni is string
+          && request.resource.data.email is string
+          && request.resource.data.tipo is string;
+    }
+    function esImagenValida() {
+      return request.resource.data.img is string
+          && request.resource.data.img.size() < 1000000
+          && request.resource.data.borrarAntesDe is number;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  FICHAJE DE TRABAJADORES
+    //  Aquí NO vale la primera regla: esa exige que quien entre seas TÚ, y
+    //  el trabajador tiene su propia identidad. Cada uno cuelga de su
+    //  identificador y solo él —y la empresa a la que pertenece— lo ve.
+    // ══════════════════════════════════════════════════════════════════
+
+    // Altas: las crea la empresa, y cada trabajador solo puede leer LA SUYA.
+    // El identificador del documento es su teléfono, y se compara con el
+    // teléfono que Firebase ha verificado por SMS: no basta con teclearlo.
+    match /altasFichaje/{telefono} {
+      allow read: if request.auth != null
+                  && request.auth.token.phone_number != null
+                  && request.auth.token.phone_number.replace('\\+', '') == telefono;
+      allow create, update, delete: if request.auth != null
+                  && request.resource.data.empresaUid == request.auth.uid;
+      allow delete: if request.auth != null
+                  && resource.data.empresaUid == request.auth.uid;
+    }
+
+    // Ficha del trabajador: su nombre, su empresa y las huellas de su PIN y
+    // de su móvil. La lee él, y la lee su empresa.
+    match /fichajes/{trabajador} {
+      allow read, write: if request.auth != null && request.auth.uid == trabajador;
+      allow read: if request.auth != null && resource.data.empresaUid == request.auth.uid;
+
+      // ── LOS FICHAJES ──
+      match /registros/{registro} {
+        // Cada trabajador lee SOLO los suyos. Su empresa los lee todos.
+        allow read: if request.auth != null
+                    && (request.auth.uid == trabajador || esSuEmpresa(trabajador));
+
+        // Solo puede fichar él, y solo con la hora del servidor: si el móvil
+        // tiene el reloj cambiado, el fichaje no cuela.
+        allow create: if request.auth != null
+                      && request.auth.uid == trabajador
+                      && request.resource.data.creado == request.time
+                      && request.resource.data.tipo in ['entrada', 'salida']
+                      && request.resource.data.fecha is string
+                      && request.resource.data.hora is string
+                      && request.resource.data.huella is string;
+
+        // NADIE modifica ni borra un fichaje. Ni el trabajador ni tú.
+        // Un registro de jornada que se puede retocar no vale como registro.
+        // Las correcciones se añaden aparte, en «rectificaciones».
+        allow update, delete: if false;
+      }
+
+      // ── JORNADA PUBLICADA ──
+      // La empresa NO puede escribir en la ficha del trabajador: ahí viven su
+      // PIN y la huella de su móvil. Pero el aviso automático necesita saber a
+      // qué hora le tocaba entrar, así que se publica aquí, en una rama que
+      // solo lleva su horario. Él también la ve, que es lo justo.
+      match /config/{doc} {
+        allow read: if request.auth != null
+                    && (request.auth.uid == trabajador || esSuEmpresa(trabajador));
+        allow write: if request.auth != null && esSuEmpresa(trabajador);
+      }
+
+      // ── CORRECCIONES ──
+      // No borran el fichaje: se añaden al lado, con quién, cuándo y por qué.
+      // El trabajador las ve, que es lo que hace la corrección legítima.
+      match /rectificaciones/{rect} {
+        allow read: if request.auth != null
+                    && (request.auth.uid == trabajador || esSuEmpresa(trabajador));
+        allow create: if request.auth != null
+                      && esSuEmpresa(trabajador)
+                      && request.resource.data.creado == request.time
+                      && request.resource.data.motivo is string
+                      && request.resource.data.motivo.size() > 3;
+        allow update, delete: if false;
+      }
+    }
+
+    function esSuEmpresa(trabajador) {
+      return get(/databases/$(database)/documents/fichajes/$(trabajador)).data.empresaUid == request.auth.uid;
+    }
+
+    // ── Todo lo demás, cerrado ────────────────────────────────────────
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}

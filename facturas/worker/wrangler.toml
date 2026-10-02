@@ -1,0 +1,9 @@
+# Worker «bh10-master»: proxy de IA, altas/bajas de usuarios y uso de la IA.
+# Los secretos (ANTHROPIC_KEY, DUENO_UID, FIREBASE_PROJECT, SERVICE_ACCOUNT, SA_JSON)
+# viven en Cloudflare y se conservan entre despliegues.
+#   cd facturas/worker && npx wrangler@4 deploy
+name = "bh10-master"
+main = "worker_master.js"
+compatibility_date = "2026-08-22"
+keep_vars = true
+preview_urls = false

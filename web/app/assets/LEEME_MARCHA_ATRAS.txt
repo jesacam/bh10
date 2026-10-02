@@ -1,0 +1,7 @@
+MARCHA ATRÁS DEL ENVOLTORIO
+v317 = envoltorio con guardado en transacción y control de versión (v398, 29-09-2026).
+v316 = el anterior (compilado desde su fuente); v310 = el minificado original de producción.
+Si algo del login/bóveda/sesiones/guardado fallara con v317: en app/index.html
+cambia index-v317.js por index-v310.js, regenera el precache y sube.
+Los chunks chunk-TEM6TWGY.js y chunk-IYWUY3VA.js son de v310: no borrar
+mientras la reversa exista.

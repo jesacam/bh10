@@ -1,0 +1,24 @@
+name = "bh10-copias"
+main = "src/index.js"
+compatibility_date = "2026-09-11"
+compatibility_flags = ["nodejs_compat"]
+
+# Copia de seguridad automática de la app de facturas: cada noche a las 03:15 (hora peninsular)
+[triggers]
+crons = ["15 1 * * *"]
+
+# Secretos (wrangler secret put): SA_JSON (cuenta de servicio de Firebase), EMPRESA_UID (uid del dueño),
+# DRIVE_FOLDER_ID (opcional: carpeta «Copias BH10» del Drive del dueño, compartida con la cuenta de servicio como editor;
+#   dentro, archivos BH10_copia_libre_NN.json creados por el dueño que el Worker reutiliza por turnos, uno por día),
+# COPIA_CLAVE (opcional: cabecera X-Copia-Clave para /ahora y /estado, y contraseña del zip si DRIVE_ZIP_CIFRADO = "si")
+[vars]
+FIREBASE_PROJECT = "b10h-facturas"
+DIAS_RETENCION_FIRESTORE = "30"
+DIAS_RETENCION_KV = "90"
+# "si" para que la copia de Drive vaya en zip cifrado con COPIA_CLAVE; "no" = JSON tal cual (sin contraseña)
+DRIVE_ZIP_CIFRADO = "no"
+
+# Copia fuera de Google: espacio de Workers KV «bh10-copias»
+[[kv_namespaces]]
+binding = "COPIAS"
+id = "ee0383f1ed8f421fb800ad65852528a6"
