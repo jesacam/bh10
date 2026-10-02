@@ -43,3 +43,4 @@ Historial:
 - v407 · 02-10-2026 · Obras › Revisar: todas las etiquetas de obra que usan las facturas (en catálogo o no), buscador, filtros, orden y periodo; cada obra se abre con sus facturas, cambio de obra factura a factura, «Fundir en» y «Ver en Facturas».
 - v408 · 02-10-2026 · el filtro de obra de recibidas y emitidas solo ofrece obras con facturas en esa lista, con el número de facturas; ya no mezcla las obras de los contratos.
 - copias · 02-10-2026 · el Worker bh10-copias guarda además cada copia diaria en Cloudflare Workers KV (copia-AAAA-MM-DD, 90 días) y permite descargarla en /kv/{fecha} con la sesión del dueño.
+- copias · 02-10-2026 · la copia diaria también va a la carpeta «Copias BH10» del Drive del dueño, en JSON y sin contraseña, rotando 31 archivos (un mes).
