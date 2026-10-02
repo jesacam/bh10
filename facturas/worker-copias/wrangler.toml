@@ -8,7 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 crons = ["15 1 * * *"]
 
 # Secretos (wrangler secret put): SA_JSON (cuenta de servicio de Firebase), EMPRESA_UID (uid del dueño),
-# COPIA_CLAVE (contraseña del zip), DRIVE_FOLDER_ID (opcional: carpeta de Drive compartida con la cuenta de servicio)
+# DRIVE_FOLDER_ID (opcional: carpeta «Copias BH10» del Drive del dueño, compartida con la cuenta de servicio como editor),
+# COPIA_CLAVE (opcional: si existe, la copia de Drive va en zip con esa contraseña; si no, JSON tal cual)
 [vars]
 FIREBASE_PROJECT = "b10h-facturas"
 DIAS_RETENCION_FIRESTORE = "30"

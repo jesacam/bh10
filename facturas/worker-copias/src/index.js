@@ -5,9 +5,9 @@
 //   1. En Firestore, en empresas/{uid}/copias/{fecha} (comprimido; 30 días).
 //   2. En Cloudflare Workers KV (espacio COPIAS), fuera de Google: clave
 //      copia-{fecha} comprimida (90 días) y «ultima» con el resumen.
-//   3. Si hay DRIVE_FOLDER_ID, como zip cifrado con COPIA_CLAVE en esa
-//      carpeta de Google Drive (90 días). Se restaura desde la app con
-//      «Restaurar backup» y la contraseña, igual que las copias manuales.
+//   3. Si hay DRIVE_FOLDER_ID, en esa carpeta de Google Drive del dueño (90 días):
+//      JSON tal cual, o zip cifrado si además hay COPIA_CLAVE. Se restaura desde
+//      la app con «Restaurar backup», igual que las copias manuales.
 // Sin coste: Firestore, KV y Drive dentro de sus tramos gratuitos.
 // Rutas (solo el dueño: cabecera X-Copia-Clave o Authorization: Bearer con su sesión de Firebase):
 //   GET /ahora            → hace la copia ahora mismo
@@ -108,11 +108,13 @@ async function zipCifrado(nombre, texto, clave) {
 }
 
 async function guardarDrive(env, tokDrive, copia, texto) {
-  const nombre = `BH10_copia_completa_${copia.fecha}.zip`;
-  const blob = await zipCifrado(`BH10_copia_completa_${copia.fecha}.json`, texto, env.COPIA_CLAVE);
-  const meta = JSON.stringify({ name: nombre, parents: [env.DRIVE_FOLDER_ID], mimeType: 'application/zip' });
+  const cifrada = !!env.COPIA_CLAVE;
+  const nombre = `BH10_copia_completa_${copia.fecha}.${cifrada ? 'zip' : 'json'}`;
+  const mime = cifrada ? 'application/zip' : 'application/json';
+  const blob = cifrada ? await zipCifrado(`BH10_copia_completa_${copia.fecha}.json`, texto, env.COPIA_CLAVE) : new Blob([texto], { type: mime });
+  const meta = JSON.stringify({ name: nombre, parents: [env.DRIVE_FOLDER_ID], mimeType: mime });
   const boundary = 'bh10' + Date.now();
-  const cuerpo = new Blob([`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/zip\r\n\r\n`, blob, `\r\n--${boundary}--`]);
+  const cuerpo = new Blob([`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`, blob, `\r\n--${boundary}--`]);
   const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,size', { method: 'POST', headers: { Authorization: 'Bearer ' + tokDrive, 'Content-Type': 'multipart/related; boundary=' + boundary }, body: cuerpo });
   if (!r.ok) throw new Error('Drive ' + r.status + ' ' + (await r.text()).slice(0, 200));
   const subida = await r.json();
@@ -189,7 +191,7 @@ async function copiar(env) {
   const res = { fecha: copia.fecha, claves: Object.keys(copia.claves).length, subEmpresas: Object.keys(copia.sub).length, bytes: texto.length };
   res.firestore = await guardarFirestore(env, tok, copia, texto);
   try { res.kv = await guardarKV(env, copia, texto); } catch (e) { res.kv = { error: String(e && e.message || e) }; }
-  if (env.DRIVE_FOLDER_ID && env.COPIA_CLAVE) {
+  if (env.DRIVE_FOLDER_ID) {
     try { const tokD = await tokenSA(env, 'https://www.googleapis.com/auth/drive'); res.drive = await guardarDrive(env, tokD, copia, texto); }
     catch (e) { res.drive = { error: String(e && e.message || e) }; }
   }
