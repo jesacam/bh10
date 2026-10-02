@@ -31,7 +31,7 @@ ok(/window\.bh10Adj\.enNube\)\{const n=await window\.bh10Adj\.enNube\(i\.adjPath
 const env=fs.readFileSync(new URL('../src-envoltorio/envoltorio.jsx',import.meta.url),'utf8');
 ok(!/F \+= \(\$\.data\(\) \|\| \{\}\)\.v \|\| ""/.test(env),'el envoltorio ya NO concatena un trozo ausente como ""');
 ok(env.includes('Documento incompleto en la nube: falta el trozo'),'un trozo ausente al abrir lanza error explícito');
-const bundle=fs.readFileSync(new URL('../web_subir/app/assets/bh10-APPV405.js',import.meta.url),'utf8');
+const bundle=fs.readFileSync(new URL('../web_subir/app/assets/bh10-APPV406.js',import.meta.url),'utf8');
 ok(bundle.includes('adjNube')&&bundle.includes('pendiente de su'),'el bundle compilado v352 lleva la marca y el aviso');
 
 console.log(`\n${n} comprobaciones, ${mal} fallos`);

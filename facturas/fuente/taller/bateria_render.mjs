@@ -44,7 +44,7 @@ const escenarios=[
   espera:{tabs:['Panel','Facturas','Gestión'], sinTabs:['Obras','Plantilla','Ajustes'], master:false, teso:true}},
 ];
 
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV405.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV406.js');
 let fallos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m); if(!c)fallos++;};
 

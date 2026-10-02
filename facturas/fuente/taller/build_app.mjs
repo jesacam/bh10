@@ -8,7 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 const shim = p => ({path: path.resolve('taller/shims/'+p)});
-const V='v405';
+const V='v406';
 const DIR='web_subir/app/assets';
 const res=await esbuild.build({
   entryPoints:[{in:'src/app.jsx', out:'bh10-APP'+V.toUpperCase()}],

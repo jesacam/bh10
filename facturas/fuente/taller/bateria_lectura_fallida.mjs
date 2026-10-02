@@ -35,7 +35,7 @@ window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,
 console.error=()=>{};console.warn=()=>{};
 
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
-const {default:App}=(await import('../web_subir/app/assets/bh10-APPV405.js'));
+const {default:App}=(await import('../web_subir/app/assets/bh10-APPV406.js'));
 const root=createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 const E=ms=>new Promise(r=>setTimeout(r,ms));

@@ -6829,51 +6829,29 @@ function App(){
             </div>
           )}
 
-          {/* ── ACCIONES: lo ocasional, plegado ── */}
-          {accionesFac&&(<>
-          {/* ── CARGA MASIVA: dos columnas de media pantalla ── */}
-          <div style={{gap:8,marginBottom:8,display:esLector()?'none':'flex',alignItems:'flex-start'}}>
-            <label style={{flex:'1 1 0',minWidth:0,background:C.vt+'12',border:`1px dashed ${C.vt}55`,borderRadius:10,padding:'10px 12px',cursor:'pointer',textAlign:'center'}}>
-              <input type="file" multiple accept="image/*,.pdf,application/pdf" style={{display:'none'}} onChange={e=>{if(e.target.files?.length)scanBatch(e.target.files);e.target.value='';}}/>
-              <span style={{fontSize:13,fontWeight:700,color:C.vt}}>📚 Lote recibidas</span>
-              <div style={{fontSize:10,color:C.mt,marginTop:2}}>PDFs o fotos · 💡 foto de 1 página gasta menos que PDF escaneado</div>
-            </label>
-
-            {/* Columna derecha: el Excel y, justo debajo, cómo entran sus filas */}
-            <div style={{flex:'1 1 0',minWidth:0,display:'flex',flexDirection:'column',gap:6}}>
-              <label style={{background:C.sc+'12',border:`1px dashed ${C.sc}55`,borderRadius:10,padding:'10px 12px',cursor:'pointer',textAlign:'center'}}>
-                <input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style={{display:'none'}} onChange={e=>{if(e.target.files?.[0])importExcel(e.target.files[0]);e.target.value='';}}/>
-                <span style={{fontSize:13,fontWeight:700,color:C.sc}}>📊 Importar Excel</span>
-                <div style={{fontSize:10,color:C.mt,marginTop:2}}>.xlsx, .xls o .csv</div>
-              </label>
-              {!esLector()&&(
-                <div style={{padding:'0 2px'}}>
-                  <div style={{fontSize:10,color:C.mt,marginBottom:4}}>Filas sin marca de pago:</div>
-                  <div style={{display:'flex',gap:6}}>
-                    {[['pendiente','⬜ Pendientes'],['pagada','✅ Pagadas']].map(([k,l])=>(
-                      <button key={k} style={{flex:1,minWidth:0,padding:'5px 6px',borderRadius:12,border:`1px solid ${xlsPago===k?C.sc:C.bd}`,background:xlsPago===k?C.sc+'1E':'transparent',color:xlsPago===k?C.sc:C.mt,fontSize:10,fontWeight:xlsPago===k?700:500,cursor:'pointer',whiteSpace:'nowrap'}} onClick={()=>setXlsPago(k)}>{l}</button>
-                    ))}
-                  </div>
-                  <div style={{fontSize:9,color:C.mt,marginTop:4,lineHeight:1.35}}>Si el Excel trae columna de estado o fecha de pago, esa manda siempre.</div>
-                </div>
-              )}
+          {/* ── ACCIONES (v406): una sola galleta con lo ocasional.
+              Jesús: «acciones debería quedarse en importación en lote y poco más…
+              podrías agruparlo en la misma galleta». El lote está arriba («Lote») y
+              la remesa va por la barra de selección; aquí queda lo de vez en cuando. */}
+          {accionesFac&&!esLector()&&(
+            <div style={{...S.card,marginBottom:8,padding:'10px 12px',borderColor:C.vt+'55'}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.04em',marginBottom:6}}>De vez en cuando</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                <label style={{...S.sm(C.sc),padding:'7px 11px',fontSize:11,cursor:'pointer',minHeight:0}} title="Importar facturas desde .xlsx, .xls o .csv">
+                  <input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style={{display:'none'}} onChange={e=>{if(e.target.files?.[0])importExcel(e.target.files[0]);e.target.value='';}}/>📊 Importar Excel
+                </label>
+                <button style={{...S.sm(C.in),padding:'7px 11px',fontSize:11,minHeight:0}} title="Poner al día muchas facturas de una vez" onClick={()=>setMasPago({hasta:'',prov:'',sel:{},fecha:today,tocado:false})}>✅ Marcar pagadas en bloque</button>
+                <button style={{...S.sm(C.mt),padding:'7px 11px',fontSize:11,minHeight:0}} title="Marca todas las pendientes de esta lista; luego quita las que no vayan y genera la remesa desde la barra" onClick={selectAllLocal}>☑ Marcar todas las pendientes ({pendientesPago.length})</button>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginTop:8,flexWrap:'wrap',fontSize:10,color:C.mt}}>
+                <span>Al importar Excel, las filas sin marca de pago entran como:</span>
+                {[['pendiente','Pendientes'],['pagada','Pagadas']].map(([k,l])=>(
+                  <button key={k} style={{padding:'3px 9px',borderRadius:12,border:`1px solid ${xlsPago===k?C.sc:C.bd}`,background:xlsPago===k?C.sc+'1E':'transparent',color:xlsPago===k?C.sc:C.mt,fontSize:10,fontWeight:xlsPago===k?700:500,cursor:'pointer'}} onClick={()=>setXlsPago(k)}>{l}</button>
+                ))}
+                <span>(si el Excel trae estado o fecha de pago, esa manda).</span>
+              </div>
             </div>
-          </div>
-
-          <div style={{display:'flex',gap:8,marginBottom:8,alignItems:'stretch'}}>
-            {!esLector()&&(
-              <button style={{flex:'1 1 0',minWidth:0,background:C.in+'12',border:`1px dashed ${C.in}55`,borderRadius:10,padding:'9px 10px',cursor:'pointer',textAlign:'center'}} onClick={()=>setMasPago({hasta:'',prov:'',sel:{},fecha:today,tocado:false})}>
-                <span style={{fontSize:12,fontWeight:700,color:C.in}}>✅ Marcar pagadas en bloque</span>
-                <div style={{fontSize:9,color:C.mt,marginTop:2,lineHeight:1.35}}>Para poner al día muchas facturas de una vez</div>
-              </button>
-            )}
-            <div style={{flex:'1 1 0',minWidth:0,background:C.in+'12',border:`1px solid ${C.in}33`,borderRadius:10,padding:'9px 10px',textAlign:'center'}}>
-              <div style={{fontSize:12,fontWeight:700,color:C.in}}>📄 Remesa C34 y obra</div>
-              <div style={{fontSize:9,color:C.mt,marginTop:2,lineHeight:1.35}}>Marca facturas con el ☑ de cada fila: abajo aparece la barra con Remesa C34 e Imputar obra.</div>
-              <button style={{...S.sm(C.in),padding:'5px 9px',fontSize:11,marginTop:5}} onClick={selectAllLocal}>☑ Marcar todas las pendientes ({pendientesPago.length})</button>
-            </div>
-          </div>
-          </>)}
+          )}
 
             {/* v383 · Jesús: «una opción en una ventana que se abra dentro de Facturas
                 recibidas, y dentro del apartado Sin documentos, que busque en el gmail

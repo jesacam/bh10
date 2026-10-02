@@ -76,7 +76,7 @@ async function vacio(ruta){
 }
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 const A=await vacio('../ref_produccion/'+REF);
-const B=await vacio('../web_subir/app/assets/bh10-APPV405.js');
+const B=await vacio('../web_subir/app/assets/bh10-APPV406.js');
 let f=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)f++;};
 const nv=t=>String(t).replace(/v3\d\d/g,'vXXX');
 ok(B.fotos.inicio.length>2000,'la app arranca con la nube VACÍA y pinta ('+B.fotos.inicio.length+' bytes)');

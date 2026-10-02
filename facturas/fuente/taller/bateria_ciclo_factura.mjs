@@ -55,7 +55,7 @@ dom.window.document.createElement=(t,...r)=>{const el=crearOrig(t,...r);
 window.URL.createObjectURL=()=>'blob:x';window.URL.revokeObjectURL=()=>{};
 
 const oe=console.error;console.error=()=>{};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV405.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV406.js');
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const E=ms=>new Promise(x=>setTimeout(x,ms));
 for(let i=0;i<320;i++){await E(25);if(document.getElementById('root').textContent.includes('Pendiente de pago'))break;}

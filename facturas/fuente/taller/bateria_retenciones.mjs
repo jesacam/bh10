@@ -31,7 +31,7 @@ const sint=[
 const invoices=[...fc,...sint];
 
 // ── motor puro por __internos ──
-const I=(await import('../web_subir/app/assets/bh10-APPV405.js')).__internos;
+const I=(await import('../web_subir/app/assets/bh10-APPV406.js')).__internos;
 ok(typeof I.resumenRetenciones==='function','motor de retenciones en __internos');
 const e1=I.estadoRetencion(sint[0],HOY);
 ok(e1.vence==='2026-06-10'&&e1.liquidable===true,'F-2025/007: 12 meses → venció el 10-06-2026, LIQUIDABLE ('+e1.dias+' d)');
@@ -47,7 +47,7 @@ ok(txt.includes('F-2025/007')&&txt.includes('2.500,00 €')&&txt.includes('TOTAL
 const nube={};for(const k of Object.keys(datos.claves))nube[k]=datos.claves[k];
 nube['bh10-fc-v3']=JSON.stringify(invoices);
 window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,set:async(k,v)=>{nube[k]=String(v);return{key:k,value:v}},delete:async k=>({key:k}),list:async p=>({keys:Object.keys(nube).filter(k=>!p||k.startsWith(p))}),getStatus:()=>({fase:'ok',error:'',ultimaEscritura:Date.now(),errorEscritura:'',pendientes:0,conflicto:null})};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV405.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV406.js');
 const oe=console.error;console.error=()=>{};
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const E=ms=>new Promise(r=>setTimeout(r,ms));
