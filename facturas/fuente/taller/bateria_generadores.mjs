@@ -304,7 +304,7 @@ async function correr(ruta){
 
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 const A=await correr('../ref_produccion/'+REF);
-const B=await correr(process.argv[2]||'../web_subir/app/assets/bh10-APPV407.js');
+const B=await correr(process.argv[2]||'../web_subir/app/assets/bh10-APPV408.js');
 let fallos=0, cubiertos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // PENDIENTE: lo que la batería todavía no alcanza. Se imprime SIEMPRE y con su

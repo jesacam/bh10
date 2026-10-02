@@ -6468,6 +6468,13 @@ function App(){
 
   const recibidas=useMemo(()=>invoices.filter(i=>i.tipo!=='cobro'),[invoices]);
   const emitidas=useMemo(()=>invoices.filter(i=>i.tipo==='cobro'),[invoices]);
+  // v408 · Jesús: «si no hay facturas dentro no debería haber posible selección de
+  // filtro». El filtro de obra de cada lista ofrece solo las obras que tienen
+  // facturas en ESA lista, con cuántas; obrasAll (catálogo + contratos) queda
+  // para los formularios, donde sí hace falta poder elegir cualquiera.
+  const obrasConFacturas=(lista)=>{const m=new Map();for(const i of lista){const o=String(i.obra||'').trim();if(!o)continue;m.set(o,(m.get(o)||0)+1);}return [...m.entries()].sort((a,b)=>a[0].localeCompare(b[0],'es')).map(([o,n])=>({o,n}));};
+  const obrasRecibidas=useMemo(()=>obrasConFacturas(recibidas),[recibidas]);
+  const obrasEmitidas=useMemo(()=>obrasConFacturas(emitidas),[emitidas]);
 
   const Facturas=()=>(
     <div style={{padding:10}}>
@@ -6796,7 +6803,8 @@ function App(){
               <option value="todos">🏪 Todos proveedores</option>{[...new Set(recibidas.map(i=>i.proveedor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).map(p=><option key={p} value={p}>{p}</option>)}
             </select>
             <select style={{...S.select,flex:'1 1 80px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px'}} value={fObra} onChange={e=>setFObra(e.target.value)}>
-              <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
+              <option value="todas">Todas obras ({obrasRecibidas.length})</option>{obrasRecibidas.map(({o,n})=><option key={o} value={o}>{o} ({n})</option>)}
+              {fObra!=='todas'&&!obrasRecibidas.some(x=>x.o===fObra)&&<option value={fObra}>{fObra} (0)</option>}
             </select>
               </div>
               {/* Exportar lo filtrado: consulta pura, también para quien solo lee */}
@@ -6982,7 +6990,8 @@ function App(){
                   <option value="todos">👤 Todos clientes</option>{[...new Set(emitidas.map(i=>i.proveedor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
                 <select style={{...S.select,flex:'1 1 80px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px'}} value={fObra} onChange={e=>setFObra(e.target.value)}>
-                  <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
+                  <option value="todas">Todas obras ({obrasEmitidas.length})</option>{obrasEmitidas.map(({o,n})=><option key={o} value={o}>{o} ({n})</option>)}
+                  {fObra!=='todas'&&!obrasEmitidas.some(x=>x.o===fObra)&&<option value={fObra}>{fObra} (0)</option>}
                 </select>
               </div>
               <div style={{display:'flex',gap:4,alignItems:'center',marginTop:8,flexWrap:'wrap'}}>

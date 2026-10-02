@@ -75,7 +75,7 @@ const cliId=idCliente(cli0);
 nube['bh10-clicat']=JSON.stringify(asegurarIds(cliCat));
 nube['bh10-obras']=JSON.stringify([{id:'ob1',alias:'Residencial Yuncos',activa:true,rol:'promotora',otros:[]},{id:'ob2',alias:'Obra ajena',activa:true,rol:'constructora',otros:[]}]);
 nube['bh10-viviendas']=JSON.stringify([{...nuevaVivienda('ob1',{identificador:'4',tipologia:'Chalet pareado',precio:250000,estado:'reservada'}),titulares:[{clienteId:cliId,porcentaje:100,regimen:''}]}]);
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV407.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV408.js');
 const root=createRoot(document.getElementById('root'));
 const errores=[];const oe=console.error;console.error=(...a)=>{errores.push(a.map(String).join(' ').slice(0,200));};
 root.render(React.createElement(App));

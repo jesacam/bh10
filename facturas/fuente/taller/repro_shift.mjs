@@ -9,7 +9,7 @@ window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEven
 window.requestAnimationFrame=cb=>setTimeout(cb,0);globalThis.requestAnimationFrame=window.requestAnimationFrame;
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
-const M=await import('../web_subir/app/assets/bh10-APPV407.js');
+const M=await import('../web_subir/app/assets/bh10-APPV408.js');
 const {ConfigAj}=M.__internos2;
 const e=React.createElement;
 const A=e('div',{key:'a'},'Face ID: la app pide iniciar sesión en cada apertura CUERPO-A');
