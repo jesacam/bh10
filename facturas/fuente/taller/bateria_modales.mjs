@@ -12,7 +12,7 @@ window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEven
 window.requestAnimationFrame=cb=>setTimeout(cb,0);globalThis.requestAnimationFrame=window.requestAnimationFrame;
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
-const M=await import('../web_subir/app/assets/bh10-APPV401.js');
+const M=await import('../web_subir/app/assets/bh10-APPV402.js');
 const {ModalFichaProveedor,ModalSepaNominas,ModalSepaC34,ModalRepartoNominas,ModalLoteEscaneo}=M.__internos2;
 const e=React.createElement;
 const root=createRoot(document.getElementById('root'));

@@ -106,7 +106,7 @@ dom.window.HTMLCanvasElement.prototype.getContext=function(){return {
   createLinearGradient:()=>({addColorStop(){}}),canvas:{width:0,height:0}};};
 dom.window.HTMLCanvasElement.prototype.toDataURL=function(){return 'data:image/png;base64,';};
 const oe=console.error;const dichos=[];console.error=(...a)=>dichos.push(String(a[0]));
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV401.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV402.js');
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const E=ms=>new Promise(x=>setTimeout(x,ms));
 for(let i=0;i<320;i++){await E(25);if(document.getElementById('root').textContent.includes('Pendiente de pago'))break;}

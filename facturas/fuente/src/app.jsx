@@ -4494,6 +4494,16 @@ function App(){
   },[view]); // eslint-disable-line
   const [accionesFac,setAccionesFac]=useState(false);  // cajones de acciones de Facturas
   const [filtrosFac,setFiltrosFac]=useState(false);    // filtros de Facturas
+  // v402 · Jesús: «una reorganización de las acciones y los filtros en facturas
+  // recibidas y emitidas podría venirnos bien». Chips de cada día, «Más filtros»
+  // con contador, orden visible, acciones por frecuencia y barra de selección.
+  const [fProx7,setFProx7]=useState(false);          // recibidas: vencen en 7 días
+  const [fDudosas,setFDudosas]=useState(false);      // recibidas: lecturas con avisos
+  const [accionesEm,setAccionesEm]=useState(false);  // emitidas: cajón de acciones
+  const [filtrosEm,setFiltrosEm]=useState(false);    // emitidas: más filtros
+  const [fGar,setFGar]=useState(false);              // emitidas: con garantía retenida
+  const [fCliSel,setFCliSel]=useState('todos');      // emitidas: cliente
+  const [sortEm,setSortEm]=useState('fecha_desc');   // emitidas: orden
   const [verExtras,setVerExtras]=useState(null);      // contrato cuyos extras se miran
   const [extraForm,setExtraForm]=useState(null);      // extra que se está editando
   const [extraAbierto,setExtraAbierto]=useState('');
@@ -5733,6 +5743,39 @@ function App(){
 
   // Combobox → moved to module level
 
+  // ═══ PERIODO (v402): el mismo chip en el panel y en las listas de facturas ═══
+  const periodoActivo=!!(dashFrom||dashTo);
+  const etiquetaPeriodo=()=>!periodoActivo?'Todo':`${dashFrom?fmtDate(dashFrom):'inicio'} → ${dashTo?fmtDate(dashTo):'hoy'}`;
+  const chipPeriodo=(estilo)=>(
+    <button style={{...S.sm(periodoActivo?C.sc:C.mt),padding:'5px 10px',fontSize:11,minHeight:0,whiteSpace:'nowrap',...(estilo||{})}} onClick={()=>setPeriodoAbierto(v=>!v)}>📅 {etiquetaPeriodo()} {periodoAbierto?'▴':'▾'}</button>
+  );
+  const tarjetaPeriodo=()=>{
+    const now=new Date();
+    const iso=d=>d.toISOString().slice(0,10);
+    const setPreset=(f,tt)=>{setDashFrom(f);setDashTo(tt);setPeriodoAbierto(false);};
+    const y=now.getFullYear(),mth=now.getMonth();
+    const chips=[
+      ['Todo',()=>setPreset('','')],
+      ['Este mes',()=>setPreset(iso(new Date(y,mth,1)),iso(new Date(y,mth+1,0)))],
+      ['Trimestre',()=>{const q=Math.floor(mth/3);setPreset(iso(new Date(y,q*3,1)),iso(new Date(y,q*3+3,0)));}],
+      ['Este año',()=>setPreset(y+'-01-01',y+'-12-31')],
+      ['Año pasado',()=>setPreset((y-1)+'-01-01',(y-1)+'-12-31')],
+    ];
+    return(
+      <div style={{...S.card,marginTop:6,marginBottom:8,padding:'9px 10px'}}>
+        <div style={{display:'flex',gap:4,flexWrap:'nowrap'}}>
+          {chips.map(([l,fn])=><button key={l} style={{...S.sm(C.in),flex:'1 1 0',minWidth:0,fontSize:10,padding:'6px 2px',minHeight:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>)}
+        </div>
+        <div style={{display:'flex',gap:6,marginTop:7,alignItems:'flex-end'}}>
+          <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Desde</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashFrom} onChange={e=>setDashFrom(e.target.value)}/></label>
+          <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Hasta</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashTo} onChange={e=>setDashTo(e.target.value)}/></label>
+          {periodoActivo&&<button style={{...S.sm(C.mt),flexShrink:0,padding:'6px 9px',fontSize:11,minHeight:34}} onClick={()=>setPreset('','')}>✕</button>}
+        </div>
+        <div style={{fontSize:9,color:C.mt,marginTop:6}}>El periodo vale para el panel y para las listas de facturas.</div>
+      </div>
+    );
+  };
+
   // ═══ GESTIÓN › IVA · 303 (v401: antes vivía en el Panel como «Resumen fiscal») ═══
   const ResumenFiscal=()=>{
           const qNames=['T1 (Ene-Mar)','T2 (Abr-Jun)','T3 (Jul-Sep)','T4 (Oct-Dic)'];
@@ -5856,47 +5899,19 @@ function App(){
     const agingData=[{name:'0-30d',value:K.aging.a030},{name:'31-60d',value:K.aging.a3160},{name:'61-90d',value:K.aging.a6190},{name:'>90d',value:K.aging.a90}].filter(d=>d.value>0);
     return(
       <div style={{padding:10}}>
-      {/* ── PERIODO (v401): un chip en la cabecera; el detalle se despliega al tocarlo ── */}
-      {(()=>{
-        const now=new Date();
-        const iso=d=>d.toISOString().slice(0,10);
-        const setPreset=(f,t)=>{setDashFrom(f);setDashTo(t);setPeriodoAbierto(false);};
-        const y=now.getFullYear(),mth=now.getMonth();
-        const chips=[
-          ['Todo',()=>setPreset('','')],
-          ['Este mes',()=>setPreset(iso(new Date(y,mth,1)),iso(new Date(y,mth+1,0)))],
-          ['Trimestre',()=>{const q=Math.floor(mth/3);setPreset(iso(new Date(y,q*3,1)),iso(new Date(y,q*3+3,0)));}],
-          ['Este año',()=>setPreset(y+'-01-01',y+'-12-31')],
-          ['Año pasado',()=>setPreset((y-1)+'-01-01',(y-1)+'-12-31')],
-        ];
-        const activo=dashFrom||dashTo;
-        const etiqueta=!activo?'Todo':`${dashFrom?fmtDate(dashFrom):'inicio'} → ${dashTo?fmtDate(dashTo):'hoy'}`;
-        return(
-          <div style={{marginBottom:8}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,margin:'2px 2px 0'}}>
-              <span style={{fontSize:10,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.06em'}}>📊 Panel</span>
-              <span style={{display:'flex',gap:6,alignItems:'center'}}>
-                <button style={{...S.sm(activo?C.sc:C.mt),padding:'5px 10px',fontSize:11,minHeight:0}} onClick={()=>setPeriodoAbierto(v=>!v)}>📅 {etiqueta} {periodoAbierto?'▴':'▾'}</button>
-                {kpiEdit&&<BtnConfirm style={{...S.sm(C.mt),padding:'4px 9px',fontSize:10,minHeight:0}} armStyle={{opacity:.85}} armedLabel="¿Restablecer? Toca otra vez" onConfirm={()=>{persistKpis({orden:[],ancho:{}});notify('Panel restablecido');}}>↺ Restablecer</BtnConfirm>}
-                <button style={{...S.sm(kpiEdit?C.sc:C.in),padding:'4px 10px',fontSize:10,minHeight:0}} onClick={()=>setKpiEdit(v=>!v)}>{kpiEdit?'✓ Hecho':'✥ Colocar'}</button>
-              </span>
-            </div>
-            {periodoAbierto&&(
-              <div style={{...S.card,marginTop:6,padding:'9px 10px'}}>
-                <div style={{display:'flex',gap:4,flexWrap:'nowrap'}}>
-                  {chips.map(([l,fn])=><button key={l} style={{...S.sm(C.in),flex:'1 1 0',minWidth:0,fontSize:10,padding:'6px 2px',minHeight:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>)}
-                </div>
-                <div style={{display:'flex',gap:6,marginTop:7,alignItems:'flex-end'}}>
-                  <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Desde</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashFrom} onChange={e=>setDashFrom(e.target.value)}/></label>
-                  <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Hasta</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashTo} onChange={e=>setDashTo(e.target.value)}/></label>
-                  {activo&&<button style={{...S.sm(C.mt),flexShrink:0,padding:'6px 9px',fontSize:11,minHeight:34}} onClick={()=>setPreset('','')}>✕</button>}
-                </div>
-              </div>
-            )}
-            {kpiEdit&&<div style={{fontSize:10,color:C.mt,margin:'6px 2px 0',lineHeight:1.4}}>Todas las casetas se pueden mover: arrástralas (o usa ◀ ▶) y pulsa ▭/◨ para ancho completo o media pantalla. Se guarda en tu nube.</div>}
-          </div>
-        );
-      })()}
+      {/* ── PERIODO: un chip en la cabecera; el detalle se despliega al tocarlo ── */}
+      <div style={{marginBottom:8}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,margin:'2px 2px 0'}}>
+          <span style={{fontSize:10,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.06em'}}>📊 Panel</span>
+          <span style={{display:'flex',gap:6,alignItems:'center'}}>
+            {chipPeriodo()}
+            {kpiEdit&&<BtnConfirm style={{...S.sm(C.mt),padding:'4px 9px',fontSize:10,minHeight:0}} armStyle={{opacity:.85}} armedLabel="¿Restablecer? Toca otra vez" onConfirm={()=>{persistKpis({orden:[],ancho:{}});notify('Panel restablecido');}}>↺ Restablecer</BtnConfirm>}
+            <button style={{...S.sm(kpiEdit?C.sc:C.in),padding:'4px 10px',fontSize:10,minHeight:0}} onClick={()=>setKpiEdit(v=>!v)}>{kpiEdit?'✓ Hecho':'✥ Colocar'}</button>
+          </span>
+        </div>
+        {periodoAbierto&&tarjetaPeriodo()}
+        {kpiEdit&&<div style={{fontSize:10,color:C.mt,margin:'6px 2px 0',lineHeight:1.4}}>Todas las casetas se pueden mover: arrástralas (o usa ◀ ▶) y pulsa ▭/◨ para ancho completo o media pantalla. Se guarda en tu nube.</div>}
+      </div>
 
       {invoices.length===0&&<div style={{...S.card,marginBottom:10,textAlign:'center',color:C.mt,fontSize:12,padding:'14px'}}>Aún no hay operaciones — entra en 📥 Recibidas o 📤 Emitidas para registrar la primera</div>}
 
@@ -5943,7 +5958,7 @@ function App(){
           const alP=polizas.filter(p=>p.activa!==false).map(p=>({n:(p.tipo||'Póliza')+(p.empresa&&p.empresa!=='BIG'?' · '+p.empresa:''),l:'Póliza',dy:daysTo(p.vto)})).filter(x=>x.dy!==null&&x.dy<=30);
           const al=[...alV,...alP].sort((a,b)=>a.dy-b.dy);
           const dudosas=invoices.filter(i=>Array.isArray(i._avisos)&&i._avisos.length).length;
-          const irRecibidas=(estado,extra)=>{setView('facturas');setSubView('recibidas');setFEstado(estado||'todos');setFMes(false);setFSinDoc(false);if(extra)extra();};
+          const irRecibidas=(estado,extra)=>{setView('facturas');setSubView('recibidas');setFEstado(estado||'todos');setFMes(false);setFSinDoc(false);setFProx7(false);setFDudosas(false);if(extra)extra();};
           const irEmitidas=(estado)=>{setView('facturas');setSubView('emitidas');setFEstado(estado||'todos');};
 
           const defs=ordenaKpis([
@@ -5968,9 +5983,9 @@ function App(){
           // «Hoy»: solo lo que pide acción; lo que está a cero no aparece
           const hoy=[
             vencList.length>0&&{k:'venc',color:C.dn,txt:`${vencList.length} factura${vencList.length>1?'s':''} vencida${vencList.length>1?'s':''}`,sub:(()=>{const v=[...vencList].sort((a,b)=>(a.fechaVencimiento||'').localeCompare(b.fechaVencimiento||''))[0];return v?`La más antigua, ${v.proveedor||'s/n'}, venció el ${fmtDate(v.fechaVencimiento)}`:'';})(),imp:fmt(heroVenc)+' €',go:()=>irRecibidas('vencida',()=>setSortMode('vencimiento'))},
-            proxList.length>0&&{k:'prox',color:C.wn,txt:`${proxList.length} vence${proxList.length>1?'n':''} en 7 días`,sub:[...new Set(proxList.map(i=>i.proveedor))].slice(0,3).join(', '),imp:fmt(proxImp)+' €',go:()=>irRecibidas('impagada',()=>setSortMode('vencimiento'))},
+            proxList.length>0&&{k:'prox',color:C.wn,txt:`${proxList.length} vence${proxList.length>1?'n':''} en 7 días`,sub:[...new Set(proxList.map(i=>i.proveedor))].slice(0,3).join(', '),imp:fmt(proxImp)+' €',go:()=>irRecibidas('impagada',()=>{setFProx7(true);setSortMode('vencimiento');})},
             !esMiembro()&&buzonTodo.total>0&&{k:'buzon',color:buzonTodo.urgente>0?C.dn:C.wn,txt:`${buzonTodo.total} en el buzón`,sub:[buzonTodo.firmas&&`${buzonTodo.firmas} firmados`,buzonTodo.clientes&&`${buzonTodo.clientes} de clientes`,buzonTodo.proveedores&&`${buzonTodo.proveedores} de proveedores`,buzonTodo.derechos&&`${buzonTodo.derechos} derechos`].filter(Boolean).join(' · '),go:()=>setBuzonAbierto(true)},
-            dudosas>0&&{k:'dud',color:C.wn,txt:`${dudosas} lectura${dudosas>1?'s':''} dudosa${dudosas>1?'s':''} por revisar`,sub:'facturas leídas con avisos del lector',go:()=>irRecibidas('todos',()=>setSortMode('registro_desc'))},
+            dudosas>0&&{k:'dud',color:C.wn,txt:`${dudosas} lectura${dudosas>1?'s':''} dudosa${dudosas>1?'s':''} por revisar`,sub:'facturas leídas con avisos del lector',go:()=>irRecibidas('todos',()=>{setFDudosas(true);setSortMode('registro_desc');})},
             al.length>0&&{k:'flota',color:al[0].dy<0?C.dn:C.wn,txt:`${al.length} vencimiento${al.length>1?'s':''} de flota y seguros`,sub:al.slice(0,2).map(x=>`${x.l} · ${x.n} · ${vencTxt(x.dy)}`).join(' · '),go:()=>setView('flota')},
           ].filter(Boolean);
 
@@ -6641,6 +6656,10 @@ function App(){
         if(fProvSel!=='todos')r=r.filter(i=>i.proveedor===fProvSel);
         if(fMes){const ym=today.slice(0,7);r=r.filter(i=>(i.fecha||'').startsWith(ym));}
         if(fSinDoc)r=r.filter(i=>{const d=docEstado(i);return d==='falta'||d==='nube';});
+        if(fProx7)r=r.filter(i=>{const e=getEstado(i,invoices);if(e==='pagada'||e==='aplicado'||e==='anticipo_libre')return false;const d=daysTo(i.fechaVencimiento);return d!==null&&d>=0&&d<=7;});
+        if(fDudosas)r=r.filter(i=>Array.isArray(i._avisos)&&i._avisos.length);
+        if(dashFrom)r=r.filter(i=>(i.fecha||'')>=dashFrom);
+        if(dashTo)r=r.filter(i=>(i.fecha||'')<=dashTo);
         const _reg=(i)=>String(i.fechaRegistro||i.fecha||'');
         const sorters={fecha_desc:(a,b)=>(b.fecha||'').localeCompare(a.fecha||''),fecha_asc:(a,b)=>(a.fecha||'').localeCompare(b.fecha||''),
           registro_desc:(a,b)=>_reg(b).localeCompare(_reg(a))||(b.fecha||'').localeCompare(a.fecha||''),registro_asc:(a,b)=>_reg(a).localeCompare(_reg(b))||(a.fecha||'').localeCompare(b.fecha||''),importe_desc:(a,b)=>(b.total||0)-(a.total||0),vencimiento:(a,b)=>(a.fechaVencimiento||'9999').localeCompare(b.fechaVencimiento||'9999')};
@@ -6666,15 +6685,12 @@ function App(){
               ))}
             </div>
           )}
-          {/* ── RESUMEN Y MANDOS ── */}
-          {/* Lo primero que se ve es cuánto se debe; lo demás, a un toque. */}
+          {/* ── RESUMEN Y MANDOS (v402) ── */}
           {(()=>{
             const viv=(invoices||[]).filter(f=>f&&!esAnulada(f)&&f.tipo!=='emitida'&&f.tipo!=='cobro');
             let tot=0,tv=0,nv=0;
             viv.forEach(f=>{
               const est=getEstado(f,invoices);
-              // Un anticipo libre ya salió de caja: es pago adelantado, no deuda.
-              // Así este total cuadra con el KPI «Pendiente de pago» del Panel.
               if(est==='pagada'||est==='aplicado'||est==='anticipo_libre')return;
               const s=getSaldo(f,invoices)||0;
               if(s<=0)return;
@@ -6684,26 +6700,119 @@ function App(){
             });
             tot=+tot.toFixed(2); tv=+tv.toFixed(2);
             return(
-              <div style={{...S.card,display:'flex',gap:10,alignItems:'center',marginBottom:9,padding:'11px 12px'}}>
+              <div style={{...S.card,display:'flex',gap:10,alignItems:'center',marginBottom:8,padding:'11px 12px'}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:10,color:C.mt,textTransform:'uppercase',letterSpacing:'.03em'}}>Pendiente de pago</div>
                   <div style={{fontSize:19,fontWeight:800,color:C.wn,lineHeight:1.15}}>{fmt(tot)} €</div>
                   {tv>0&&<div style={{fontSize:10.5,color:C.dn,fontWeight:600}}>{fmt(tv)} € vencido · {nv} factura{nv!==1?'s':''}</div>}
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:5,flexShrink:0}}>
-                  {/* Acciones = escritura → solo con permiso. Filtros y su Excel = consulta pura → siempre. */}
+                  {!esLector()&&(
+                    <label style={{...S.sm(C.vt),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto',textAlign:'center',cursor:'pointer'}} title="Leer varias facturas de golpe: PDFs o fotos">
+                      <input type="file" multiple accept="image/*,.pdf,application/pdf" style={{display:'none'}} onChange={e=>{if(e.target.files?.length)scanBatch(e.target.files);e.target.value='';}}/>📚 Lote
+                    </label>
+                  )}
                   {!esLector()&&(
                     <button style={{...S.sm(accionesFac?C.vt:C.mt),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto'}}
                       onClick={()=>setAccionesFac(v=>!v)}>{accionesFac?'▴ Acciones':'⚙️ Acciones'}</button>
                   )}
-                  <button style={{...S.sm(filtrosFac?C.in:C.mt),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto'}}
-                    onClick={()=>setFiltrosFac(v=>!v)}>{filtrosFac?'▴ Filtros':'🔎 Filtros'}</button>
                 </div>
               </div>
             );
           })()}
 
-          {/* ── ACCIONES: plegadas, porque son de vez en cuando ── */}
+          {/* ── CHIPS DE CADA DÍA: siempre a la vista, reparten el ancho ── */}
+          <div style={{display:'flex',gap:5,marginBottom:6,flexWrap:'nowrap'}}>
+            {[['pend','⏳ Pendientes',()=>setFEstado(fEstado==='impagada'?'todos':'impagada'),fEstado==='impagada'],
+              ['venc','⚠️ Vencidas',()=>setFEstado(fEstado==='vencida'?'todos':'vencida'),fEstado==='vencida'],
+              ['prox','⏰ 7 días',()=>setFProx7(v=>!v),fProx7],
+              ['sdoc',`📎 Sin doc${(()=>{const n=recibidas.filter(i=>{const d=docEstado(i);return d==='falta'||d==='nube';}).length;return n?' '+n:'';})()}`,()=>setFSinDoc(v=>!v),fSinDoc],
+              ['dud',`🔎 Dudosas${(()=>{const n=recibidas.filter(i=>Array.isArray(i._avisos)&&i._avisos.length).length;return n?' '+n:'';})()}`,()=>setFDudosas(v=>!v),fDudosas]].map(([k,l,fn,on])=>(
+              <button key={k} style={{flex:'1 1 0',minWidth:0,padding:'7px 3px',borderRadius:20,border:`1px solid ${on?C.ac:C.bd}`,background:on?C.ac+'22':'transparent',color:on?C.ac:C.mt,fontSize:10.5,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>
+            ))}
+          </div>
+
+          {/* ── MÁS FILTROS · ORDEN · PERIODO, y lo que esté activo como ficha con aspa ── */}
+          {(()=>{
+            const activos=[
+              fTipo!=='todos'&&['tipo',{factura:'📄 Factura',personal:'👷 Personal',estructura:'🏢 Estructura',anticipo:'⏩ Anticipo'}[fTipo]||fTipo,()=>setFTipo('todos')],
+              (fEstado!=='todos'&&fEstado!=='impagada'&&fEstado!=='vencida')&&['estado',{pendiente:'Pendiente',parcial:'Parcial',pagada:'Pagada',anticipo_libre:'Anticipos libres'}[fEstado]||fEstado,()=>setFEstado('todos')],
+              fProvSel!=='todos'&&['prov','🏪 '+fProvSel,()=>setFProvSel('todos')],
+              fObra!=='todas'&&['obra','🏗 '+fObra,()=>setFObra('todas')],
+              fMes&&['mes','📅 Este mes',()=>setFMes(false)],
+              periodoActivo&&['per','📅 '+etiquetaPeriodo(),()=>{setDashFrom('');setDashTo('');}],
+              search&&['q','🔍 «'+search+'»',()=>setSearch('')],
+            ].filter(Boolean);
+            const nMas=[fTipo!=='todos',fEstado!=='todos'&&fEstado!=='impagada'&&fEstado!=='vencida',fProvSel!=='todos',fObra!=='todas'].filter(Boolean).length;
+            return(<>
+              <div style={{display:'flex',gap:5,marginBottom:6,alignItems:'center',flexWrap:'nowrap'}}>
+                <button style={{...S.sm(filtrosFac||nMas?C.in:C.mt),fontSize:11,padding:'6px 10px',minHeight:0,whiteSpace:'nowrap'}} onClick={()=>setFiltrosFac(v=>!v)}>🔎 Filtros{nMas?` (${nMas})`:''} {filtrosFac?'▴':'▾'}</button>
+                <select style={{...S.select,flex:'1 1 0',minWidth:0,fontSize:11,padding:'5px 6px'}} value={sortMode} onChange={e=>setSortMode(e.target.value)} title="Orden de la lista">
+                  <option value="fecha_desc">↓ Fecha</option><option value="fecha_asc">↑ Fecha</option><option value="registro_desc">📝 Últimas registradas</option><option value="registro_asc">📝 Primeras registradas</option><option value="importe_desc">€ Mayor importe</option><option value="vencimiento">⏰ Por vencimiento</option>
+                </select>
+                {chipPeriodo({padding:'6px 10px'})}
+              </div>
+              {periodoAbierto&&tarjetaPeriodo()}
+              {activos.length>0&&(
+                <div style={{display:'flex',gap:5,marginBottom:8,flexWrap:'wrap'}}>
+                  {activos.map(([k,l,fn])=>(
+                    <button key={k} onClick={fn} title="Quitar este filtro" style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 9px',borderRadius:14,border:`1px solid ${C.ac}66`,background:C.ac+'14',color:C.ac,fontSize:10.5,fontWeight:700,cursor:'pointer',maxWidth:'100%'}}>
+                      <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l}</span><span style={{opacity:.8}}>✕</span>
+                    </button>
+                  ))}
+                  <button onClick={()=>{setFTipo('todos');setFEstado('todos');setFProvSel('todos');setFObra('todas');setFMes(false);setDashFrom('');setDashTo('');setSearch('');}} style={{padding:'4px 9px',borderRadius:14,border:`1px solid ${C.bd}`,background:'transparent',color:C.mt,fontSize:10.5,cursor:'pointer'}}>Quitar todos</button>
+                </div>
+              )}
+            </>);
+          })()}
+
+          {filtrosFac&&(
+            <div style={{...S.card,marginBottom:8,padding:'8px 10px'}}>
+              <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+            <select style={{...S.select,width:'auto',minWidth:0,maxWidth:'46vw',fontSize:11,padding:'4px 6px'}} value={fTipo} onChange={e=>setFTipo(e.target.value)}>
+              <option value="todos">Todo tipo</option><option value="factura">📄 Factura</option><option value="personal">👷 Personal</option><option value="estructura">🏢 Estructura</option><option value="anticipo">⏩ Anticipo</option>
+            </select>
+            <select style={{...S.select,width:'auto',minWidth:0,maxWidth:'46vw',fontSize:11,padding:'4px 6px'}} value={fEstado} onChange={e=>setFEstado(e.target.value)}>
+              <option value="todos">Todo estado</option><option value="impagada">⏳ Sin pagar</option><option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagada">Pagada</option><option value="vencida">Vencida</option><option value="anticipo_libre">Anticipos libres</option>
+            </select>
+            <select style={{...S.select,flex:'1 1 90px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px',color:fProvSel!=='todos'?C.ac:undefined,borderColor:fProvSel!=='todos'?C.ac+'66':undefined}} value={fProvSel} onChange={e=>setFProvSel(e.target.value)}>
+              <option value="todos">🏪 Todos proveedores</option>{[...new Set(recibidas.map(i=>i.proveedor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).map(p=><option key={p} value={p}>{p}</option>)}
+            </select>
+            <select style={{...S.select,flex:'1 1 80px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px'}} value={fObra} onChange={e=>setFObra(e.target.value)}>
+              <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+              </div>
+              {/* Exportar lo filtrado: consulta pura, también para quien solo lee */}
+              <div style={{display:'flex',gap:4,alignItems:'center',marginTop:8,flexWrap:'wrap'}}>
+                <span style={{fontSize:10,color:C.mt,marginRight:2}}>Exportar lo filtrado:</span>
+                <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:700,background:C.sc+'22',color:C.sc}} title="Exportar a Excel con el filtro actual" onClick={()=>{
+              const partes=[];
+              partes.push(fEstado==='impagada'?'solo pendientes de pago':fEstado==='vencida'?'solo vencidas':fEstado==='pagada'?'solo pagadas':'pagadas y pendientes');
+              if(fMes)partes.push('del mes en curso');
+              if(fSinDoc)partes.push('solo sin documento');
+              if(fProv&&fProv!=='todos')partes.push('de '+fProv);
+              if(fObra&&fObra!=='todas')partes.push('obra '+fObra);
+              if(search)partes.push('búsqueda «'+search+'»');
+              if(dashFrom||dashTo)partes.push(`entre ${dashFrom?fmtDate(dashFrom):'el inicio'} y ${dashTo?fmtDate(dashTo):'hoy'}`);
+              exportExcelLista(r,'facturas_recibidas','Facturas recibidas',partes.join(' · '));
+            }}>📊 Excel</button>
+                {ES_APP&&!esLector()&&<button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:700,background:C.in+'22',color:C.in,opacity:zipListaBusy?0.6:1}} disabled={zipListaBusy} title="ZIP con la lista y los documentos (PDF/fotos) de estas facturas, con el filtro actual" onClick={()=>{
+              const partes=[];
+              partes.push(fEstado==='impagada'?'solo pendientes de pago':fEstado==='vencida'?'solo vencidas':fEstado==='pagada'?'solo pagadas':'pagadas y pendientes');
+              if(fMes)partes.push('del mes en curso');
+              if(fSinDoc)partes.push('solo sin documento');
+              if(fProv&&fProv!=='todos')partes.push('de '+fProv);
+              if(fObra&&fObra!=='todas')partes.push('obra '+fObra);
+              if(search)partes.push('búsqueda «'+search+'»');
+              if(dashFrom||dashTo)partes.push(`entre ${dashFrom?fmtDate(dashFrom):'el inicio'} y ${dashTo?fmtDate(dashTo):'hoy'}`);
+              exportZipLista(r,partes.join(' · '));
+            }}>{zipListaBusy?'⏳ ZIP…':'📎 ZIP'}</button>}
+                <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:600,background:C.bg,color:C.mt}} title="CSV plano, para otros programas" onClick={()=>exportCSVLista(r,'recibidas_filtro')}>CSV</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── ACCIONES: lo ocasional, plegado ── */}
           {accionesFac&&(<>
           {/* ── CARGA MASIVA: dos columnas de media pantalla ── */}
           <div style={{gap:8,marginBottom:8,display:esLector()?'none':'flex',alignItems:'flex-start'}}>
@@ -6734,7 +6843,6 @@ function App(){
             </div>
           </div>
 
-          {/* ── PAGOS EN BLOQUE + SEPA: dos cuadros de media pantalla ── */}
           <div style={{display:'flex',gap:8,marginBottom:8,alignItems:'stretch'}}>
             {!esLector()&&(
               <button style={{flex:'1 1 0',minWidth:0,background:C.in+'12',border:`1px dashed ${C.in}55`,borderRadius:10,padding:'9px 10px',cursor:'pointer',textAlign:'center'}} onClick={()=>setMasPago({hasta:'',prov:'',sel:{},fecha:today,tocado:false})}>
@@ -6742,15 +6850,35 @@ function App(){
                 <div style={{fontSize:9,color:C.mt,marginTop:2,lineHeight:1.35}}>Para poner al día muchas facturas de una vez</div>
               </button>
             )}
-            <div style={{flex:'1 1 0',minWidth:0,background:C.in+'12',border:`1px solid ${C.in}33`,borderRadius:10,padding:'9px 10px'}}>
-              <div style={{fontSize:12,fontWeight:700,color:C.in,textAlign:'center'}}>📄 Fichero SEPA (C34)</div>
-              {selected.size>0&&<div style={{fontSize:10,color:C.mt,textAlign:'center',marginTop:2}}>{selected.size} sel. · <strong>{fmt(invoices.filter(i=>selected.has(i.id)).reduce((s,i)=>s+impRemesa(i),0))} €</strong></div>}
-              <div style={{display:'flex',gap:5,marginTop:5,justifyContent:'center',flexWrap:'wrap'}}>
-                <button style={{...S.sm(C.in),padding:'5px 9px',fontSize:11}} onClick={selectAllLocal}>☑ Todas ({pendientesPago.length})</button>
-                {selected.size>0&&<button style={{...S.sm(C.sc),padding:'5px 9px',fontSize:11,fontWeight:700}} onClick={()=>setShowSepa(true)}>Generar</button>}
-                {selected.size>0&&!esLector()&&<button style={{...S.sm(C.wn),padding:'5px 9px',fontSize:11}} onClick={()=>setImpObra(p=>p?null:{destino:''})}>🏗 Obra</button>}
-                {selected.size>0&&<button style={{...S.sm(C.mt),padding:'5px 8px',fontSize:11}} onClick={clearSelection}>✕</button>}
-              </div>
+            <div style={{flex:'1 1 0',minWidth:0,background:C.in+'12',border:`1px solid ${C.in}33`,borderRadius:10,padding:'9px 10px',textAlign:'center'}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.in}}>📄 Remesa C34 y obra</div>
+              <div style={{fontSize:9,color:C.mt,marginTop:2,lineHeight:1.35}}>Marca facturas con el ☑ de cada fila: abajo aparece la barra con Remesa C34 e Imputar obra.</div>
+              <button style={{...S.sm(C.in),padding:'5px 9px',fontSize:11,marginTop:5}} onClick={selectAllLocal}>☑ Marcar todas las pendientes ({pendientesPago.length})</button>
+            </div>
+          </div>
+          </>)}
+
+            {/* v383 · Jesús: «una opción en una ventana que se abra dentro de Facturas
+                recibidas, y dentro del apartado Sin documentos, que busque en el gmail
+                los posibles documentos de las facturas registradas sin documento». Solo
+                aparece cuando el filtro está puesto: es donde tiene sentido. */}
+            {fSinDoc&&!esLector()&&(()=>{
+              const faltan=recibidas.filter(i=>{const d=docEstado(i);return d==='falta'||d==='nube';});
+              if(!faltan.length)return null;
+              return <button style={{...S.sm(C.in),width:'100%',marginBottom:8,fontSize:11,fontWeight:700}}
+                onClick={()=>{descartadasRef.current=new Set();setPkCheq(c=>({...(c||{}),gmail:{en:true,resultados:[]}}));
+                  setDocsGmail({faltan});buscarEnGmailFaltantes(faltan.slice(0,TANDA_GMAIL));}}>
+                📧 Buscar en Gmail los {faltan.length} documentos que faltan
+              </button>;
+            })()}
+
+          {/* ── BARRA DE SELECCIÓN (v402): aparece al marcar facturas ── */}
+          {selected.size>0&&(()=>{
+            const sel=invoices.filter(i=>selected.has(i.id));
+            return(
+              <div style={{position:'fixed',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:58,padding:'0 8px 6px',boxSizing:'border-box'}}>
+                {impObra&&(
+                  <div style={{...S.card,marginBottom:6,padding:'8px 10px'}}>
               {/* v361 · imputar en bloque a una obra (con segundo toque; desvincula de la anterior) */}
               {impObra&&selected.size>0&&(()=>{
                 const sel=invoices.filter(i=>selected.has(i.id));const dest=String(impObra.destino||'').trim();
@@ -6773,79 +6901,18 @@ function App(){
                   </div>
                 );
               })()}
-              {selected.size===0&&<div style={{fontSize:9,color:C.mt,marginTop:4,textAlign:'center',lineHeight:1.35}}>Marca facturas con el ☑ de cada fila</div>}
-            </div>
-          </div>
-          </>)}
-
-          {/* Desplegables plegados: los chips de abajo cubren casi todo
-              y estos estorbaban a diario. */}
-          {filtrosFac&&(<>
-          <div style={{display:'flex',gap:4,marginBottom:8,flexWrap:'wrap',alignItems:'center'}}>
-            <select style={{...S.select,width:'auto',minWidth:0,maxWidth:'46vw',fontSize:11,padding:'4px 6px'}} value={fTipo} onChange={e=>setFTipo(e.target.value)}>
-              <option value="todos">Todo tipo</option><option value="factura">📄 Factura</option><option value="personal">👷 Personal</option><option value="estructura">🏢 Estructura</option><option value="anticipo">⏩ Anticipo</option>
-            </select>
-            <select style={{...S.select,width:'auto',minWidth:0,maxWidth:'46vw',fontSize:11,padding:'4px 6px'}} value={fEstado} onChange={e=>setFEstado(e.target.value)}>
-              <option value="todos">Todo estado</option><option value="impagada">⏳ Sin pagar</option><option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagada">Pagada</option><option value="vencida">Vencida</option><option value="anticipo_libre">Anticipos libres</option>
-            </select>
-            <select style={{...S.select,flex:'1 1 90px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px',color:fProvSel!=='todos'?C.ac:undefined,borderColor:fProvSel!=='todos'?C.ac+'66':undefined}} value={fProvSel} onChange={e=>setFProvSel(e.target.value)}>
-              <option value="todos">🏪 Todos proveedores</option>{[...new Set(recibidas.map(i=>i.proveedor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).map(p=><option key={p} value={p}>{p}</option>)}
-            </select>
-            <select style={{...S.select,flex:'1 1 80px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px'}} value={fObra} onChange={e=>setFObra(e.target.value)}>
-              <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
-            </select>
-            <select style={{...S.select,width:'auto',fontSize:11,padding:'4px 6px'}} value={sortMode} onChange={e=>setSortMode(e.target.value)}>
-              <option value="fecha_desc">↓ Más recientes</option><option value="fecha_asc">↑ Más antiguas</option><option value="registro_desc">📝 Últimas registradas</option><option value="registro_asc">📝 Primeras registradas</option><option value="importe_desc">€ Mayor importe</option><option value="vencimiento">⏰ Por vencimiento</option>
-            </select>
-            <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:700,background:C.sc+'22',color:C.sc}} title="Exportar a Excel con el filtro actual" onClick={()=>{
-              const partes=[];
-              partes.push(fEstado==='impagada'?'solo pendientes de pago':fEstado==='vencida'?'solo vencidas':fEstado==='pagada'?'solo pagadas':'pagadas y pendientes');
-              if(fMes)partes.push('del mes en curso');
-              if(fSinDoc)partes.push('solo sin documento');
-              if(fProv&&fProv!=='todos')partes.push('de '+fProv);
-              if(fObra&&fObra!=='todas')partes.push('obra '+fObra);
-              if(search)partes.push('búsqueda «'+search+'»');
-              if(dashFrom||dashTo)partes.push(`entre ${dashFrom?fmtDate(dashFrom):'el inicio'} y ${dashTo?fmtDate(dashTo):'hoy'}`);
-              exportExcelLista(r,'facturas_recibidas','Facturas recibidas',partes.join(' · '));
-            }}>📊 Excel</button>
-            {ES_APP&&!esLector()&&<button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:700,background:C.in+'22',color:C.in,opacity:zipListaBusy?0.6:1}} disabled={zipListaBusy} title="ZIP con la lista y los documentos (PDF/fotos) de estas facturas, con el filtro actual" onClick={()=>{
-              const partes=[];
-              partes.push(fEstado==='impagada'?'solo pendientes de pago':fEstado==='vencida'?'solo vencidas':fEstado==='pagada'?'solo pagadas':'pagadas y pendientes');
-              if(fMes)partes.push('del mes en curso');
-              if(fSinDoc)partes.push('solo sin documento');
-              if(fProv&&fProv!=='todos')partes.push('de '+fProv);
-              if(fObra&&fObra!=='todas')partes.push('obra '+fObra);
-              if(search)partes.push('búsqueda «'+search+'»');
-              if(dashFrom||dashTo)partes.push(`entre ${dashFrom?fmtDate(dashFrom):'el inicio'} y ${dashTo?fmtDate(dashTo):'hoy'}`);
-              exportZipLista(r,partes.join(' · '));
-            }}>{zipListaBusy?'⏳ ZIP…':'📎 ZIP'}</button>}
-            <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:600,background:C.bg,color:C.mt}} title="CSV plano, para otros programas" onClick={()=>exportCSVLista(r,'recibidas_filtro')}>CSV</button>
-          </div>
-          </>)}
-
-          {/* Los cuatro filtros rápidos reparten el ancho en una única fila */}
-          <div style={{display:'flex',gap:6,margin:'6px 0 8px',flexWrap:'nowrap'}}>
-            {[['todas','Todas',()=>{setFEstado('todos');setFMes(false);setFSinDoc(false);},fEstado==='todos'&&!fMes&&!fSinDoc],
-              ['pend','⏳ Pendientes',()=>setFEstado(fEstado==='impagada'?'todos':'impagada'),fEstado==='impagada'],
-              ['venc','⚠️ Vencidas',()=>setFEstado(fEstado==='vencida'?'todos':'vencida'),fEstado==='vencida'],
-              ['mes','📅 Este mes',()=>setFMes(m=>!m),fMes],
-              ['sdoc',`📎 Sin doc${(()=>{const n=recibidas.filter(i=>{const d=docEstado(i);return d==='falta'||d==='nube';}).length;return n?' ('+n+')':'';})()}`,()=>setFSinDoc(v=>!v),fSinDoc]].map(([k,l,fn,on])=>(
-              <button key={k} style={{flex:'1 1 0',minWidth:0,padding:'7px 4px',borderRadius:20,border:`1px solid ${on?C.ac:C.bd}`,background:on?C.ac+'22':'transparent',color:on?C.ac:C.mt,fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>
-            ))}
-          </div>
-            {/* v383 · Jesús: «una opción en una ventana que se abra dentro de Facturas
-                recibidas, y dentro del apartado Sin documentos, que busque en el gmail
-                los posibles documentos de las facturas registradas sin documento». Solo
-                aparece cuando el filtro está puesto: es donde tiene sentido. */}
-            {fSinDoc&&!esLector()&&(()=>{
-              const faltan=recibidas.filter(i=>{const d=docEstado(i);return d==='falta'||d==='nube';});
-              if(!faltan.length)return null;
-              return <button style={{...S.sm(C.in),width:'100%',marginBottom:8,fontSize:11,fontWeight:700}}
-                onClick={()=>{descartadasRef.current=new Set();setPkCheq(c=>({...(c||{}),gmail:{en:true,resultados:[]}}));
-                  setDocsGmail({faltan});buscarEnGmailFaltantes(faltan.slice(0,TANDA_GMAIL));}}>
-                📧 Buscar en Gmail los {faltan.length} documentos que faltan
-              </button>;
-            })()}
+                  </div>
+                )}
+                <div style={{background:C.sf,border:`1px solid ${C.in}66`,borderRadius:12,padding:'8px 10px',boxShadow:'0 6px 20px rgba(0,0,0,.45)',display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                  <span style={{fontSize:11,fontWeight:700,flex:'1 1 auto',minWidth:0}}>{selected.size} seleccionada{selected.size!==1?'s':''} · <span style={{color:C.in}}>{fmt(sel.reduce((s,i)=>s+impRemesa(i),0))} €</span></span>
+                  <button style={{...S.sm(C.mt),padding:'6px 8px',fontSize:11}} onClick={selectAllLocal} title="Marcar todas las pendientes de esta lista">☑ Todas ({pendientesPago.length})</button>
+                  <button style={{...S.sm(C.sc),padding:'6px 10px',fontSize:11,fontWeight:700}} onClick={()=>setShowSepa(true)}>🏦 Remesa C34</button>
+                  {!esLector()&&<button style={{...S.sm(impObra?C.wn:C.in),padding:'6px 10px',fontSize:11}} onClick={()=>setImpObra(p=>p?null:{destino:''})}>🏗 Obra</button>}
+                  <button style={{...S.sm(C.mt),padding:'6px 8px',fontSize:11}} onClick={()=>{clearSelection();setImpObra(null);}}>✕</button>
+                </div>
+              </div>
+            );
+          })()}
           {fProvSel!=='todos'&&(()=>{const tot=r.reduce((s,i)=>s+(i.total||0),0);const pte=r.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);return(
             <div style={{background:C.ac+'11',border:`1px solid ${C.ac}33`,borderRadius:8,padding:'6px 10px',marginBottom:8,fontSize:11,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:6}}>
               <span>🏪 <b>{fProvSel}</b> · {r.length} factura{r.length!==1?'s':''} en el filtro actual</span>
@@ -6865,6 +6932,7 @@ function App(){
                   ⬇ Mostrar más ({r.length-verFilas} restantes)
                 </button>
               )}
+              {selected.size>0&&<div style={{height:70}}/>}
               <div style={{marginTop:8,padding:'4px',display:'flex',justifyContent:'space-between',fontSize:11,color:C.mt}}>
                 <span>{r.length} factura{r.length!==1?'s':''} recibida{r.length!==1?'s':''}</span>
                 <span>Total gastos: {fmt(r.filter(i=>i.tipo!=='anticipo').reduce((s,i)=>s+i.total,0))} €</span>
@@ -6879,20 +6947,107 @@ function App(){
         const q=(search||'').toLowerCase();
         let r=[...emitidas];
         if(q)r=r.filter(i=>(i.proveedor+i.obra+i.concepto+i.numFactura).toLowerCase().includes(q));
-        if(fEstado!=='todos'){if(fEstado==='impagada')r=r.filter(i=>{const e=getEstado(i,invoices);return e!=='pagada';});else r=r.filter(i=>getEstado(i,invoices)===fEstado);}
+        if(fEstado!=='todos'){
+          if(fEstado==='impagada')r=r.filter(i=>{const e=getEstado(i,invoices);return e!=='pagada';});
+          else if(fEstado==='vencida')r=r.filter(i=>{const e=getEstado(i,invoices);return e==='vencida'||e==='parcial_vencida';});
+          else r=r.filter(i=>getEstado(i,invoices)===fEstado);
+        }
         if(fObra!=='todas')r=r.filter(i=>i.obra===fObra);
-        r.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+        if(fCliSel!=='todos')r=r.filter(i=>i.proveedor===fCliSel);
+        if(fGar)r=r.filter(i=>(i.retGarImp||0)>0&&!i.retGarDevuelta);
+        if(dashFrom)r=r.filter(i=>(i.fecha||'')>=dashFrom);
+        if(dashTo)r=r.filter(i=>(i.fecha||'')<=dashTo);
+        const sorters={fecha_desc:(a,b)=>(b.fecha||'').localeCompare(a.fecha||''),fecha_asc:(a,b)=>(a.fecha||'').localeCompare(b.fecha||''),
+          importe_desc:(a,b)=>(b.total||0)-(a.total||0),vencimiento:(a,b)=>(a.fechaVencimiento||'9999').localeCompare(b.fechaVencimiento||'9999'),
+          cliente:(a,b)=>String(a.proveedor||'').localeCompare(String(b.proveedor||''),'es')||(b.fecha||'').localeCompare(a.fecha||'')};
+        r.sort(sorters[sortEm]||sorters.fecha_desc);
+        // Cabecera: lo que nos deben (sin filtrar) y lo vencido
+        const vivas=emitidas.filter(i=>!esAnulada(i));
+        let tot=0,tv=0,nv=0;
+        vivas.forEach(f=>{const e=getEstado(f,invoices);if(e==='pagada')return;const s=Math.max(getSaldo(f,invoices)||0,0);if(s<=0)return;tot+=s;if(e==='vencida'||e==='parcial_vencida'){tv+=s;nv++;}});
+        tot=+tot.toFixed(2);tv=+tv.toFixed(2);
+        const nGar=vivas.filter(i=>(i.retGarImp||0)>0&&!i.retGarDevuelta).length;
+        const activos=[
+          (fEstado!=='todos'&&fEstado!=='impagada'&&fEstado!=='vencida')&&['estado',{pendiente:'Pendiente',parcial:'Parcial',pagada:'Cobrada'}[fEstado]||fEstado,()=>setFEstado('todos')],
+          fCliSel!=='todos'&&['cli','👤 '+fCliSel,()=>setFCliSel('todos')],
+          fObra!=='todas'&&['obra','🏗 '+fObra,()=>setFObra('todas')],
+          periodoActivo&&['per','📅 '+etiquetaPeriodo(),()=>{setDashFrom('');setDashTo('');}],
+          search&&['q','🔍 «'+search+'»',()=>setSearch('')],
+        ].filter(Boolean);
+        const nMas=[fEstado!=='todos'&&fEstado!=='impagada'&&fEstado!=='vencida',fCliSel!=='todos',fObra!=='todas'].filter(Boolean).length;
+        const partesTxt=()=>[fEstado==='impagada'?'solo pendientes de cobro':fEstado==='vencida'?'solo vencidas':fEstado==='pagada'?'solo cobradas':'cobradas y pendientes',fGar?'con garantía retenida':'',fCliSel!=='todos'?'de '+fCliSel:'',fObra!=='todas'?'obra '+fObra:'',search?'búsqueda «'+search+'»':'',(dashFrom||dashTo)?`entre ${dashFrom?fmtDate(dashFrom):'el inicio'} y ${dashTo?fmtDate(dashTo):'hoy'}`:''].filter(Boolean).join(' · ');
         return(<>
-          {/* Acciones en paralelo: el lote a la izquierda, emitir y export a la derecha */}
-          {!esLector()&&(
+          {/* ── RESUMEN Y MANDOS (v402): lo que nos deben, emitir y acciones ── */}
+          <div style={{...S.card,display:'flex',gap:10,alignItems:'center',marginBottom:8,padding:'11px 12px'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10,color:C.mt,textTransform:'uppercase',letterSpacing:'.03em'}}>Pendiente de cobro</div>
+              <div style={{fontSize:19,fontWeight:800,color:'#F97316',lineHeight:1.15}}>{fmt(tot)} €</div>
+              {tv>0&&<div style={{fontSize:10.5,color:C.dn,fontWeight:600}}>{fmt(tv)} € vencido · {nv} factura{nv!==1?'s':''}</div>}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:5,flexShrink:0}}>
+              {!esLector()&&<button style={{...S.sm(C.sc),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto',fontWeight:700}} onClick={()=>openNew('cobro')}>+ Emitir</button>}
+              {!esLector()&&<button style={{...S.sm(accionesEm?C.vt:C.mt),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto'}} onClick={()=>setAccionesEm(v=>!v)}>{accionesEm?'▴ Acciones':'⚙️ Acciones'}</button>}
+            </div>
+          </div>
+
+          {/* ── CHIPS DE CADA DÍA ── */}
+          <div style={{display:'flex',gap:5,marginBottom:6,flexWrap:'nowrap'}}>
+            {[['pend','⏳ Sin cobrar',()=>setFEstado(fEstado==='impagada'?'todos':'impagada'),fEstado==='impagada'],
+              ['venc','⚠️ Vencidas',()=>setFEstado(fEstado==='vencida'?'todos':'vencida'),fEstado==='vencida'],
+              ['gar',`🛡️ Garantía${nGar?' '+nGar:''}`,()=>setFGar(v=>!v),fGar]].map(([k,l,fn,on])=>(
+              <button key={k} style={{flex:'1 1 0',minWidth:0,padding:'7px 3px',borderRadius:20,border:`1px solid ${on?C.ac:C.bd}`,background:on?C.ac+'22':'transparent',color:on?C.ac:C.mt,fontSize:10.5,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>
+            ))}
+          </div>
+
+          {/* ── MÁS FILTROS · ORDEN · PERIODO ── */}
+          <div style={{display:'flex',gap:5,marginBottom:6,alignItems:'center',flexWrap:'nowrap'}}>
+            <button style={{...S.sm(filtrosEm||nMas?C.in:C.mt),fontSize:11,padding:'6px 10px',minHeight:0,whiteSpace:'nowrap'}} onClick={()=>setFiltrosEm(v=>!v)}>🔎 Filtros{nMas?` (${nMas})`:''} {filtrosEm?'▴':'▾'}</button>
+            <select style={{...S.select,flex:'1 1 0',minWidth:0,fontSize:11,padding:'5px 6px'}} value={sortEm} onChange={e=>setSortEm(e.target.value)} title="Orden de la lista">
+              <option value="fecha_desc">↓ Fecha</option><option value="fecha_asc">↑ Fecha</option><option value="importe_desc">€ Mayor importe</option><option value="vencimiento">⏰ Por vencimiento</option><option value="cliente">👤 Por cliente</option>
+            </select>
+            {chipPeriodo({padding:'6px 10px'})}
+          </div>
+          {periodoAbierto&&tarjetaPeriodo()}
+          {activos.length>0&&(
+            <div style={{display:'flex',gap:5,marginBottom:8,flexWrap:'wrap'}}>
+              {activos.map(([k,l,fn])=>(
+                <button key={k} onClick={fn} title="Quitar este filtro" style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 9px',borderRadius:14,border:`1px solid ${C.ac}66`,background:C.ac+'14',color:C.ac,fontSize:10.5,fontWeight:700,cursor:'pointer',maxWidth:'100%'}}>
+                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l}</span><span style={{opacity:.8}}>✕</span>
+                </button>
+              ))}
+              <button onClick={()=>{setFEstado('todos');setFCliSel('todos');setFObra('todas');setFGar(false);setDashFrom('');setDashTo('');setSearch('');}} style={{padding:'4px 9px',borderRadius:14,border:`1px solid ${C.bd}`,background:'transparent',color:C.mt,fontSize:10.5,cursor:'pointer'}}>Quitar todos</button>
+            </div>
+          )}
+          {filtrosEm&&(
+            <div style={{...S.card,marginBottom:8,padding:'8px 10px'}}>
+              <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                <select style={{...S.select,width:'auto',minWidth:0,maxWidth:'46vw',fontSize:11,padding:'4px 6px'}} value={fEstado} onChange={e=>setFEstado(e.target.value)}>
+                  <option value="todos">Todo estado</option><option value="impagada">⏳ Sin cobrar</option><option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagada">Cobrada</option><option value="vencida">Vencida</option>
+                </select>
+                <select style={{...S.select,flex:'1 1 90px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px',color:fCliSel!=='todos'?C.ac:undefined}} value={fCliSel} onChange={e=>setFCliSel(e.target.value)}>
+                  <option value="todos">👤 Todos clientes</option>{[...new Set(emitidas.map(i=>i.proveedor).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+                <select style={{...S.select,flex:'1 1 80px',minWidth:0,maxWidth:'94vw',fontSize:11,padding:'4px 6px'}} value={fObra} onChange={e=>setFObra(e.target.value)}>
+                  <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div style={{display:'flex',gap:4,alignItems:'center',marginTop:8,flexWrap:'wrap'}}>
+                <span style={{fontSize:10,color:C.mt,marginRight:2}}>Exportar lo filtrado:</span>
+                <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:700,background:C.sc+'22',color:C.sc}} title="Exportar a Excel con el filtro actual" onClick={()=>exportExcelLista(r,'facturas_emitidas','Facturas emitidas',partesTxt())}>📊 Excel</button>
+                <button style={{padding:'4px 9px',border:'none',borderRadius:8,cursor:'pointer',fontSize:11,fontWeight:600,background:C.bg,color:C.mt}} title="CSV plano, para otros programas" onClick={()=>exportCSVLista(r,'emitidas_filtro')}>CSV</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── ACCIONES: lo ocasional, plegado ── */}
+          {accionesEm&&!esLector()&&(
             <div style={{display:'flex',gap:8,marginBottom:8,alignItems:'stretch'}}>
               <label style={{flex:'1 1 0',minWidth:0,background:C.sc+'12',border:`1px dashed ${C.sc}55`,borderRadius:10,padding:'10px 12px',cursor:'pointer',textAlign:'center',display:'flex',flexDirection:'column',justifyContent:'center'}}>
                 <input type="file" multiple accept="image/*,.pdf,application/pdf" style={{display:'none'}} onChange={e=>{if(e.target.files?.length)scanBatch(e.target.files,'cobro');e.target.value='';}}/>
                 <span style={{fontSize:13,fontWeight:700,color:C.sc}}>📤 Lote emitidas</span>
                 <div style={{fontSize:10,color:C.mt,marginTop:2,lineHeight:1.35}}>Tus facturas de venta · el cliente será el destinatario</div>
               </label>
-              <div style={{flex:'1 1 0',minWidth:0,display:'flex',flexDirection:'column',gap:6}}>
-                <button style={{...S.btn(C.sc),width:'100%',fontSize:13,padding:'11px 8px'}} onClick={()=>openNew('cobro')}>+ Emitir factura</button>
+              <div style={{flex:'1 1 0',minWidth:0,display:'flex',flexDirection:'column',gap:6,justifyContent:'center'}}>
                 <button style={{...S.sm(C.vt),width:'100%',padding:'10px 8px',fontSize:12}} title="Export completo para migración a software Verifactu" onClick={()=>{
               const list=invoices.filter(i=>i.tipo==='cobro');
               if(!list.length){notify('No hay facturas emitidas','error');return;}
@@ -6907,18 +7062,10 @@ function App(){
               shareOrDownload([h,...rows].join('\n'),`Emitidas_migracion_verifactu_${today}.csv`,'text/csv;charset=utf-8');
               notify(`${list.length} facturas exportadas para migración`);
             }}>📦 Export migración</button>
+                <div style={{fontSize:9,color:C.mt,lineHeight:1.35,textAlign:'center'}}>Export completo para migrar a un programa Verifactu.</div>
               </div>
             </div>
           )}
-          {/* Filtros debajo de las acciones */}
-          <div style={{display:'flex',gap:6,marginBottom:8,alignItems:'center'}}>
-            <select style={{...S.select,flex:'1 1 0',minWidth:0,fontSize:11,padding:'5px 6px'}} value={fEstado} onChange={e=>setFEstado(e.target.value)}>
-              <option value="todos">Todo estado</option><option value="pendiente">Pendiente cobro</option><option value="parcial">Parcial</option><option value="pagada">Cobrada</option>
-            </select>
-            <select style={{...S.select,flex:'1 1 0',minWidth:0,fontSize:11,padding:'5px 6px'}} value={fObra} onChange={e=>setFObra(e.target.value)}>
-              <option value="todas">Todas obras</option>{obrasAll.map(o=><option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
           {r.length===0?(
             <div style={{textAlign:'center',padding:30,color:C.mt}}>
               {emitidas.length===0?<div><div style={{marginBottom:10}}>Sin facturas emitidas</div><div style={{fontSize:11,color:C.mt}}>Crea un contrato y genera certificaciones, o emite una factura directamente</div></div>:'Sin resultados'}
@@ -6926,9 +7073,9 @@ function App(){
           ):(
             <div>
               {r.map(inv=><div key={inv.id}>{InvRow({inv})}</div>)}
-              <div style={{marginTop:8,padding:'4px',display:'flex',justifyContent:'space-between',fontSize:11,color:C.mt}}>
+              <div style={{marginTop:8,padding:'4px',display:'flex',justifyContent:'space-between',fontSize:11,color:C.mt,flexWrap:'wrap',gap:4}}>
                 <span>{r.length} factura{r.length!==1?'s':''} emitida{r.length!==1?'s':''}</span>
-                <span>Facturado: {fmt(r.reduce((s,i)=>s+i.total,0))} € · Cobrado: {fmt(r.reduce((s,i)=>s+getTotalPagado(i,invoices),0))} €</span>
+                <span>Facturado: {fmt(r.reduce((s,i)=>s+i.total,0))} € · Cobrado: {fmt(r.reduce((s,i)=>s+getTotalPagado(i,invoices),0))} € · <b style={{color:'#F97316'}}>Pendiente: {fmt(r.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0))} €</b></span>
               </div>
             </div>
           )}

@@ -11,7 +11,7 @@ globalThis.window=dom.window;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
-const I=(await import('../web_subir/app/assets/bh10-APPV401.js')).__internos;
+const I=(await import('../web_subir/app/assets/bh10-APPV402.js')).__internos;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 ok(typeof I.vfQrDataUrl==='function'&&typeof I.vfUrlCotejo==='function','vfQrDataUrl y vfUrlCotejo en __internos');
 const reg={idEmisor:'B45731981',numSerie:'F-2026/001',fechaExpedicion:'23-08-2026',importeTotal:1210};

@@ -9,7 +9,7 @@ globalThis.window=dom.window;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){}});
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
-const M=await import('../web_subir/app/assets/bh10-APPV401.js');const I=M.__internos;const I2=M.__internos2;
+const M=await import('../web_subir/app/assets/bh10-APPV402.js');const I=M.__internos;const I2=M.__internos2;
 const datos=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const fc=JSON.parse(datos.claves['bh10-fc-v3']);
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
