@@ -1,1 +1,1 @@
-export const APP_VERSION='v403';
+export const APP_VERSION='v404';

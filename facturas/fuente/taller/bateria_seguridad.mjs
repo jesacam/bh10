@@ -78,7 +78,7 @@ const tab=[...document.querySelectorAll('button')].find(b=>/Ajustes/.test(b.text
 
 window.localStorage.setItem('bh10-autocierre','1');
 let cerrada=0;window.bh10Logout=async()=>{cerrada++;};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV403.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV404.js');
 const root=createRoot(document.getElementById('root'));
 const oe=console.error;console.error=()=>{};
 root.render(React.createElement(App));

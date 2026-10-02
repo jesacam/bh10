@@ -87,7 +87,7 @@ window.storage={get:async k=>nube[k]!==undefined?{key:k,value:nube[k]}:null,
   getStatus:()=>({fase:'ok',error:'',ultimaEscritura:FIJO,errorEscritura:'',pendientes:0,conflicto:null})};
 
 const oe=console.error;const dichos=[];console.error=(...a)=>dichos.push(a.map(x=>(x&&x.message)||String(x)).join(' '));
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV403.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV404.js');
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const E=ms=>new Promise(x=>setTimeout(x,ms));
 for(let i=0;i<320;i++){await E(25);if(document.getElementById('root').textContent.includes('Pendiente de pago'))break;}

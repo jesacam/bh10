@@ -142,7 +142,7 @@ async function ejecutar(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const A=await ejecutar(process.argv[2]||('../ref_produccion/'+REF));
-const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV403.js');
+const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV404.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // v359 · el diario permanente (bh10-diario) es una escritura nueva y autorizada: se aparta del byte a byte
 const tramo=(r,d,h)=>r.escrituras.slice(r.cortes[d],r.cortes[h]).filter(([k])=>k!=='bh10-diario').map(([k,v])=>k+'='+v).join('\u0001');

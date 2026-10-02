@@ -5,7 +5,7 @@
 import fs from 'fs';
 const d=JSON.parse(fs.readFileSync((process.env.BH10_COPIA||'/home/claude/copia/BH10_copia_completa_2026-09-06.json'),'utf8'));
 const invs=JSON.parse(d.claves['bh10-fc-v3']);
-const s=fs.readFileSync('web_subir/app/assets/bh10-APPV403.js','utf8');
+const s=fs.readFileSync('web_subir/app/assets/bh10-APPV404.js','utf8');
 // el literal del comentario no sobrevive al minificado: verificar por comportamiento.
 // Reimplantación local de la lógica corregida (idéntica al TSX v309):
 const anulada=i=>!!(i.anulada||i.esAnulada||i.estadoVf==='anulada');

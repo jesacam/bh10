@@ -6725,6 +6725,10 @@ function App(){
                       <input type="file" multiple accept="image/*,.pdf,application/pdf" style={{display:'none'}} onChange={e=>{if(e.target.files?.length)scanBatch(e.target.files);e.target.value='';}}/>📚 Lote
                     </label>
                   )}
+                  {/* v404 · el C34 se hace con las facturas marcadas una a una (☑ de cada fila) */}
+                  <button style={{...S.sm(selected.size?C.sc:C.mt),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto',fontWeight:selected.size?700:500}} title="Remesa C34 con las facturas marcadas"
+                    onClick={()=>{if(selected.size){setShowSepa(true);return;}if(fEstado==='todos')setFEstado('impagada');notify('Marca con ☑ las facturas que quieras pagar; el botón se activa con las marcadas');}}>
+                    🏦 Remesa{selected.size?` (${selected.size})`:''}</button>
                   {!esLector()&&(
                     <button style={{...S.sm(accionesFac?C.vt:C.mt),fontSize:11,padding:'7px 11px',minHeight:0,width:'auto'}}
                       onClick={()=>setAccionesFac(v=>!v)}>{accionesFac?'▴ Acciones':'⚙️ Acciones'}</button>
@@ -6885,11 +6889,39 @@ function App(){
               </button>;
             })()}
 
-          {/* ── BARRA DE SELECCIÓN (v402): aparece al marcar facturas ── */}
+          {fProvSel!=='todos'&&(()=>{const tot=r.reduce((s,i)=>s+(i.total||0),0);const pte=r.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);return(
+            <div style={{background:C.ac+'11',border:`1px solid ${C.ac}33`,borderRadius:8,padding:'6px 10px',marginBottom:8,fontSize:11,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:6}}>
+              <span>🏪 <b>{fProvSel}</b> · {r.length} factura{r.length!==1?'s':''} en el filtro actual</span>
+              <span>Total {fmt(tot)} € · <b style={{color:pte>0.01?C.wn:C.sc}}>pendiente {fmt(pte)} €</b></span>
+            </div>
+          );})()}
+          {r.length===0?(
+            <div style={{textAlign:'center',padding:30,color:C.mt}}>
+              {recibidas.length===0?<div><div style={{marginBottom:10}}>Sin facturas recibidas</div><button style={S.sm(C.ac)} onClick={()=>openNew('factura')}>+ Registrar factura de proveedor</button></div>:'Sin resultados'}
+            </div>
+          ):(
+            <div>
+              {(()=>{const porFecha=(sortMode||'fecha_desc').startsWith('fecha');let mesPrev='';return r.slice(0,verFilas).map(inv=>{const mes=porFecha?String(inv.fecha||'').slice(0,7):'';const cab=porFecha&&mes&&mes!==mesPrev;if(cab)mesPrev=mes;return(<div key={inv.id}>{cab&&<div style={{position:'sticky',top:0,zIndex:5,background:C.bg+'F0',backdropFilter:'blur(6px)',padding:'7px 4px 5px',fontSize:11,fontWeight:800,letterSpacing:'.07em',color:C.mt,textTransform:'uppercase'}}>{MESES_L[+mes.slice(5,7)-1]} {mes.slice(0,4)}</div>}{InvRow({inv})}</div>);});})()}
+              {r.length>verFilas&&(
+                <button style={{...S.sm(C.in),width:'100%',marginTop:6}}
+                  onClick={()=>setVerFilas(v=>v+120)}>
+                  ⬇ Mostrar más ({r.length-verFilas} restantes)
+                </button>
+              )}
+              <div style={{marginTop:8,padding:'4px',display:'flex',justifyContent:'space-between',fontSize:11,color:C.mt}}>
+                <span>{r.length} factura{r.length!==1?'s':''} recibida{r.length!==1?'s':''}</span>
+                <span>Total gastos: {fmt(r.filter(i=>i.tipo!=='anticipo').reduce((s,i)=>s+i.total,0))} €</span>
+              </div>
+            </div>
+          )}
+          {/* ── BARRA DE SELECCIÓN (v404): al final de la lista y pegada al borde inferior del scroll.
+              Jesús: «era tan sencillo como tener un selector de cada factura que quería pagar, y luego
+              generaba el sepa con aquellas seleccionadas». Sigue igual: casilla por factura; la barra
+              con «Remesa C34» ya no depende de una posición fija que en el móvil no se veía. */}
           {selected.size>0&&(()=>{
             const sel=invoices.filter(i=>selected.has(i.id));
             return(
-              <div style={{position:'fixed',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:58,padding:'0 8px 6px',boxSizing:'border-box'}}>
+              <div style={{position:'sticky',bottom:6,zIndex:58,marginTop:8}}>
                 {impObra&&(
                   <div style={{...S.card,marginBottom:6,padding:'8px 10px'}}>
               {/* v361 · imputar en bloque a una obra (con segundo toque; desvincula de la anterior) */}
@@ -6926,32 +6958,6 @@ function App(){
               </div>
             );
           })()}
-          {fProvSel!=='todos'&&(()=>{const tot=r.reduce((s,i)=>s+(i.total||0),0);const pte=r.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);return(
-            <div style={{background:C.ac+'11',border:`1px solid ${C.ac}33`,borderRadius:8,padding:'6px 10px',marginBottom:8,fontSize:11,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:6}}>
-              <span>🏪 <b>{fProvSel}</b> · {r.length} factura{r.length!==1?'s':''} en el filtro actual</span>
-              <span>Total {fmt(tot)} € · <b style={{color:pte>0.01?C.wn:C.sc}}>pendiente {fmt(pte)} €</b></span>
-            </div>
-          );})()}
-          {r.length===0?(
-            <div style={{textAlign:'center',padding:30,color:C.mt}}>
-              {recibidas.length===0?<div><div style={{marginBottom:10}}>Sin facturas recibidas</div><button style={S.sm(C.ac)} onClick={()=>openNew('factura')}>+ Registrar factura de proveedor</button></div>:'Sin resultados'}
-            </div>
-          ):(
-            <div>
-              {(()=>{const porFecha=(sortMode||'fecha_desc').startsWith('fecha');let mesPrev='';return r.slice(0,verFilas).map(inv=>{const mes=porFecha?String(inv.fecha||'').slice(0,7):'';const cab=porFecha&&mes&&mes!==mesPrev;if(cab)mesPrev=mes;return(<div key={inv.id}>{cab&&<div style={{position:'sticky',top:0,zIndex:5,background:C.bg+'F0',backdropFilter:'blur(6px)',padding:'7px 4px 5px',fontSize:11,fontWeight:800,letterSpacing:'.07em',color:C.mt,textTransform:'uppercase'}}>{MESES_L[+mes.slice(5,7)-1]} {mes.slice(0,4)}</div>}{InvRow({inv})}</div>);});})()}
-              {r.length>verFilas&&(
-                <button style={{...S.sm(C.in),width:'100%',marginTop:6}}
-                  onClick={()=>setVerFilas(v=>v+120)}>
-                  ⬇ Mostrar más ({r.length-verFilas} restantes)
-                </button>
-              )}
-              {selected.size>0&&<div style={{height:70}}/>}
-              <div style={{marginTop:8,padding:'4px',display:'flex',justifyContent:'space-between',fontSize:11,color:C.mt}}>
-                <span>{r.length} factura{r.length!==1?'s':''} recibida{r.length!==1?'s':''}</span>
-                <span>Total gastos: {fmt(r.filter(i=>i.tipo!=='anticipo').reduce((s,i)=>s+i.total,0))} €</span>
-              </div>
-            </div>
-          )}
         </>);
       })()}
 

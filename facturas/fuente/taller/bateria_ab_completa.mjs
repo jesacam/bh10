@@ -118,7 +118,7 @@ async function capturar(ruta){
   return fotos;
 }
 const A=await capturar((()=>{const R=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));if(!R)throw new Error('falta ref_produccion');return '../ref_produccion/'+R;})());
-const B=await capturar('../web_subir/app/assets/bh10-APPV403.js');
+const B=await capturar('../web_subir/app/assets/bh10-APPV404.js');
 let fallos=0;
 for(const k of Object.keys(A)){
   if(A[k]===B[k]){console.log('  ✓',k.padEnd(10),'IDÉNTICO ·',A[k].length,'chars');continue;}
