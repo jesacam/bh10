@@ -38,9 +38,22 @@ export const avisosLectura=(inv,ctx)=>{
   if(!String(inv.proveedor||'').trim())out.push('sin proveedor');
   else if(/\bPAGAD[OA]\b|\bCOBRAD[OA]\b/.test(pr.replace(/[^A-Z]/g,' ')))out.push('el nombre parece un sello, no un proveedor');
   if(!String(inv.numFactura||'').trim())out.push('sin número de factura');
-  const tot=+inv.total||0, base=+inv.importeBase||0;
-  if(tot<=0&&base<=0)out.push('importe cero');
+  // v400 · Jesús (02-10-2026): «cada vez que leo una factura sale un error en rojo
+  // sobre el importe, pero todo está bien». mapearLectura devuelve importeBase ya
+  // FORMATEADO («1.234,56») y el total como _totalLeido: +«1.234,56» es NaN y el
+  // aviso «importe cero» saltaba en casi todas. Se mira todo lo que trae importe.
+  const bases=Array.isArray(inv.desglose)?inv.desglose.reduce((s,l)=>s+(numES(l&&l.base)||0),0):0;
+  const importe=Math.max(numES(inv._totalLeido),numES(inv.total),numES(inv.importeBase),bases);
+  if(!(importe>0))out.push('importe cero');
   return out;
+};
+// Número tal como lo escribe la app («1.234,56») o como lo da el lector (1234.56).
+export const numES=(v)=>{
+  if(typeof v==='number')return isFinite(v)?v:0;
+  let s=String(v==null?'':v).trim().replace(/[€\s]/g,'');if(!s)return 0;
+  if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.');}
+  else if((s.match(/\./g)||[]).length>1)s=s.replace(/\./g,'');
+  const n=parseFloat(s);return isFinite(n)?n:0;
 };
 
 // Quita del proveedor lo que seguro es nuestro (el CIF): mejor vacío que equivocado.

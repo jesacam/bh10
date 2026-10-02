@@ -10,7 +10,7 @@ const dom=new JSDOM('<!doctype html>',{url:'https://bh10group.com/app/'});
 globalThis.window=dom.window;globalThis.document=dom.window.document;
 window.__BH10_R=React;window.__BH10_JSX=JSXR;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
-const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV399.js');
+const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV400.js');
 const {previsionTesoreria,vfPlanReintento}=I;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 

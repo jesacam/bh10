@@ -174,7 +174,7 @@ async function ejecutar(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const A=await ejecutar(process.argv[2]||('../ref_produccion/'+REF));
-const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV399.js');
+const B=await ejecutar(process.argv[3]||'../web_subir/app/assets/bh10-APPV400.js');
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 // v359 · fuera del byte a byte: el latido de sesión (bh10-sesiones, periódico: con el pre-vuelo
 // en paralelo cae en un tramo u otro según la carga) y el diario permanente (bh10-diario, nuevo)

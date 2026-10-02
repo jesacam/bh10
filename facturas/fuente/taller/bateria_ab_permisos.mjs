@@ -60,7 +60,7 @@ const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f))
 let fallos=0;
 for(const esc of ESC){
   const A=await pinta(process.argv[2]||('../ref_produccion/'+REF),esc);
-  const B=await pinta(process.argv[3]||'../web_subir/app/assets/bh10-APPV399.js',esc);
+  const B=await pinta(process.argv[3]||'../web_subir/app/assets/bh10-APPV400.js',esc);
   console.log('── '+esc.n);
   if(B.omitidas.length)console.log('  · pantallas que este perfil no ve (no se comparan):',B.omitidas.join(', '));
   for(const k of Object.keys(A.fotos)){if(B.omitidas.includes(k))continue;

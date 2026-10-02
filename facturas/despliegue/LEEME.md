@@ -33,3 +33,4 @@ Historial:
 - v397 · 29-09-2026 · lector robusto ante fotos giradas.
 - v398 · 29-09-2026 · escrituras por transacción (fin de los pisotones entre aparatos), orden por fecha de registro, gestoría desde una fecha.
 - v399 · 29-09-2026 · el lector no imputa a obra la dirección propia; casa con el catálogo de obras.
+- v400 · 02-10-2026 · el aviso «importe cero» ya no salta con importes bien leídos; taller/montar_sitio.mjs monta web/ desde la compilación.
