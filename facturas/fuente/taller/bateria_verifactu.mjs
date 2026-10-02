@@ -8,7 +8,7 @@ globalThis.window=dom.window;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){}});
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
-const I=(await import('../web_subir/app/assets/bh10-APPV406.js')).__internos;
+const I=(await import('../web_subir/app/assets/bh10-APPV407.js')).__internos;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 
 const BIG={nif:'B45731981',nombre:'BIG HOUSE 2010 SL',productorNif:'B45731981',instalacion:'1'};

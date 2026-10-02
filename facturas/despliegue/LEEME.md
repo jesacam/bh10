@@ -40,3 +40,4 @@ Historial:
 - v404 · 02-10-2026 · recibidas: la barra de selección (Remesa C34, Imputar obra) va pegada al final de la lista en vez de fija, y el botón «Remesa (n)» de la tarjeta abre el C34 con las facturas marcadas una a una.
 - v405 · 02-10-2026 · la barra de selección de recibidas va anclada justo encima de la barra de pestañas (como los avisos) y solo mientras haya facturas marcadas.
 - v406 · 02-10-2026 · recibidas: «Acciones» es una sola galleta compacta (importar Excel, marcar pagadas en bloque, marcar todas las pendientes); el lote va arriba y la remesa por la barra de selección.
+- v407 · 02-10-2026 · Obras › Revisar: todas las etiquetas de obra que usan las facturas (en catálogo o no), buscador, filtros, orden y periodo; cada obra se abre con sus facturas, cambio de obra factura a factura, «Fundir en» y «Ver en Facturas».

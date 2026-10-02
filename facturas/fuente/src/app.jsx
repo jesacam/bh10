@@ -4410,7 +4410,7 @@ function App(){
   const alAplicar=(r)=>{if(r&&r.tipo==='firma')return alAplicarFirma(r);if(r&&r.id&&window.bh10InvitacionUsada)window.bh10InvitacionUsada(r.id).catch(()=>{});   /* v368: el enlace queda usado */
     if(!r||!r.viviendaId)return;const v=viviendas.find(x=>x.id===r.viviendaId);if(!v)return;const res=aplicarRecibidoAVivienda({recibido:r,vivienda:v,cliCat});let vv=res.vivienda;if(Array.isArray(r.mejoras)&&r.mejoras.length)vv=aplicarMejoras(vv,r.mejoras,'configurador').vivienda;persistCliCat(res.cliCat);persistViviendas(viviendas.map(x=>x.id===vv.id?vv:x));notify(`🏠 Vivienda ${vv.identificador}: ${vv.titulares.length} titular(es)${res.nuevos.length?' · '+res.nuevos.length+' ficha(s) nueva(s)':''}${r.mejoras&&r.mejoras.length?' · mejoras del configurador':''}`);};
   // v361 · obras: vista dentro de Contratos e imputación en bloque desde Recibidas
-  const [obrasUI,setObrasUI]=useState({vista:'catalogo',imp:null,sel:{},destino:'',desde:'',hasta:''});
+  const [obrasUI,setObrasUI]=useState({vista:'revisar',imp:null,sel:{},destino:'',desde:'',hasta:'',q:'',filtro:'todas',orden:'importe',abierta:null,cambio:null,fundirEn:'',verN:60});
   const [impObra,setImpObra]=useState(null); // {destino} en la barra de selección de Recibidas
   // v361 · obras: importación desde plantilla (vista previa), fusión de valores, imputar en bloque
   const [obrasImport,setObrasImport]=useState(null);   // {lec, nombre}
@@ -9433,7 +9433,7 @@ function App(){
               <div style={{padding:10}}>
                 {/* v363 · pastillas ordenadas: una fila de vistas (tres iguales) y otra de acciones */}
                 <div style={{display:'flex',gap:6,marginBottom:6}}>
-                  {[['catalogo','📚 Catálogo'],['fundir','🔗 Fundir'],['coste','📊 Coste']].map(([k,l])=>(
+                  {[['revisar','🔍 Revisar'],['catalogo','📚 Catálogo'],['fundir','🔗 Fundir'],['coste','📊 Coste']].map(([k,l])=>(
                     <button key={k} onClick={()=>setObrasUI(u=>({...u,vista:k}))} style={{flex:1,padding:'9px 6px',borderRadius:10,fontSize:12,fontWeight:obrasUI.vista===k?700:500,cursor:'pointer',border:`1px solid ${obrasUI.vista===k?C.in:C.bd}`,background:obrasUI.vista===k?C.in+'22':'transparent',color:obrasUI.vista===k?C.in:C.mt}}>{l}</button>
                   ))}
                 </div>
@@ -9465,6 +9465,127 @@ function App(){
                       <button style={S.sm(C.mt)} onClick={()=>setObrasUI(u=>({...u,imp:null}))}>Cancelar</button>
                     </div>
                   </div>);})()}
+                {/* ── REVISAR (v407) ── Jesús: «no tengo filtros, no tengo nada que poder ver y
+                    ver las facturas dependientes de cada obra para ver si están bien asignadas».
+                    Todas las obras que usan las facturas (estén o no en el catálogo), con buscador,
+                    filtros y orden; cada una se abre y enseña sus facturas, con cambio de obra
+                    factura a factura y «fundir en» para toda la etiqueta. */}
+                {obrasUI.vista==='revisar'&&(()=>{
+                  const enPeriodo=(i)=>(!dashFrom||(i.fecha||'')>=dashFrom)&&(!dashTo||(i.fecha||'')<=dashTo);
+                  const base=invoices.filter(i=>enPeriodo(i)&&!esAnulada(i)&&i.tipo!=='anticipo'&&i.tipo!=='personal'&&i.tipo!=='presupuesto');
+                  const grupos=new Map();
+                  for(const i of base){
+                    const k=String(i.obra||'').trim()||'(sin obra)';
+                    const g=grupos.get(k)||{valor:k,facturas:[],total:0,pend:0,ultima:''};
+                    g.facturas.push(i);
+                    if(i.tipo!=='cobro'){g.total+=+i.total||0;if(getEstado(i,invoices)!=='pagada')g.pend+=Math.max(getSaldo(i,invoices)||0,0);}
+                    if((i.fecha||'')>g.ultima)g.ultima=i.fecha||'';
+                    grupos.set(k,g);
+                  }
+                  for(const o of obras){const n=nombreObra(o);if(!grupos.has(n))grupos.set(n,{valor:n,facturas:[],total:0,pend:0,ultima:''});}
+                  const q=String(obrasUI.q||'').toLowerCase();
+                  let filas=[...grupos.values()].map(g=>({...g,cat:g.valor==='(sin obra)'?null:obraDelCatalogo(g.valor,obras)}));
+                  if(q)filas=filas.filter(g=>g.valor.toLowerCase().includes(q)||(g.cat&&nombreObra(g.cat).toLowerCase().includes(q)));
+                  const f=obrasUI.filtro||'todas';
+                  if(f==='cat')filas=filas.filter(g=>g.cat);
+                  else if(f==='sincat')filas=filas.filter(g=>!g.cat&&g.valor!=='(sin obra)');
+                  else if(f==='pend')filas=filas.filter(g=>g.pend>0.01);
+                  const ord=obrasUI.orden||'importe';
+                  filas.sort(ord==='nombre'?(a,b)=>a.valor.localeCompare(b.valor,'es'):ord==='n'?(a,b)=>b.facturas.length-a.facturas.length:ord==='ultima'?(a,b)=>(b.ultima||'').localeCompare(a.ultima||''):(a,b)=>b.total-a.total);
+                  const totalFilas=filas.reduce((s,g)=>s+g.total,0);
+                  const nombresTodos=[...new Set([...obras.map(nombreObra),...[...grupos.keys()].filter(k=>k!=='(sin obra)')])].sort((a,b)=>a.localeCompare(b,'es'));
+                  const cambiarObra=(inv,dest)=>{
+                    if(sinAccion('obras','imputar obras'))return;
+                    origenCambio.current='obras: revisar';
+                    setInvoices(prev=>prev.map(x=>x.id===inv.id?{...x,obra:dest}:x));
+                    setObrasUI(u=>({...u,cambio:null}));
+                    notify(dest?`🏗 Factura imputada a «${dest}»`:'🏗 Factura sin obra');
+                  };
+                  const estadoTxt=(i)=>{if(i.tipo==='cobro')return 'emitida';const e=getEstado(i,invoices);return e==='pagada'?'pagada':e==='vencida'||e==='parcial_vencida'?'vencida':e==='parcial'?'parcial':'pendiente';};
+                  const estadoCol=(s)=>s==='pagada'?C.sc:s==='vencida'?C.dn:s==='emitida'?C.in:C.wn;
+                  const chip=(k,l)=>{const on=f===k;return <button key={k} onClick={()=>setObrasUI(u=>({...u,filtro:k,verN:60}))} style={{flex:'1 1 0',minWidth:0,padding:'6px 4px',borderRadius:16,border:`1px solid ${on?C.ac:C.bd}`,background:on?C.ac+'22':'transparent',color:on?C.ac:C.mt,fontSize:10.5,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{l}</button>;};
+                  return (
+                    <div style={S.card}>
+                      <div style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
+                        <input value={obrasUI.q||''} onChange={e=>setObrasUI(u=>({...u,q:e.target.value,verN:60}))} placeholder="🔍 Buscar obra…" style={{...S.input,flex:'1 1 0',minWidth:0,padding:'7px 10px',fontSize:12}}/>
+                        {chipPeriodo({padding:'7px 10px'})}
+                      </div>
+                      {periodoAbierto&&tarjetaPeriodo()}
+                      <div style={{display:'flex',gap:5,marginBottom:6}}>
+                        {chip('todas','Todas')}{chip('cat','En catálogo')}{chip('sincat','Sin catálogo')}{chip('pend','Con pendiente')}
+                      </div>
+                      <div style={{display:'flex',gap:6,alignItems:'center',marginBottom:8,fontSize:10.5,color:C.mt,flexWrap:'wrap'}}>
+                        <span style={{flex:'1 1 auto'}}><b style={{color:C.tx}}>{filas.length}</b> obras · <b style={{color:C.tx}}>{fmt(totalFilas)} €</b> en gasto{(dashFrom||dashTo)?' del periodo':''}</span>
+                        <select style={{...S.select,width:'auto',fontSize:11,padding:'4px 6px'}} value={ord} onChange={e=>setObrasUI(u=>({...u,orden:e.target.value}))}>
+                          <option value="importe">€ Mayor gasto</option><option value="n">Nº facturas</option><option value="ultima">Última factura</option><option value="nombre">A–Z</option>
+                        </select>
+                      </div>
+                      <datalist id="bh-obras-rev">{nombresTodos.map(n=><option key={n} value={n}/>)}</datalist>
+                      {filas.length===0&&<div style={{fontSize:11,color:C.mt,padding:10,textAlign:'center'}}>Nada que mostrar con este filtro.</div>}
+                      {filas.slice(0,obrasUI.verN||60).map(g=>{
+                        const abierta=obrasUI.abierta===g.valor;
+                        const facts=[...g.facturas].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+                        return (
+                          <div key={g.valor} style={{borderTop:`1px solid ${C.bd}33`}}>
+                            <div onClick={()=>setObrasUI(u=>({...u,abierta:abierta?null:g.valor,cambio:null,fundirEn:''}))} style={{display:'flex',gap:8,alignItems:'center',padding:'8px 0',cursor:'pointer'}}>
+                              <span style={{color:C.mt,fontSize:12,width:12,flexShrink:0}}>{abierta?'▾':'▸'}</span>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontWeight:700,fontSize:12.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:g.valor==='(sin obra)'?C.wn:C.tx}}>{g.valor}</div>
+                                <div style={{fontSize:10,color:C.mt,marginTop:1}}>
+                                  {g.facturas.length} factura{g.facturas.length!==1?'s':''}{g.ultima?` · última ${fmtDate(g.ultima)}`:''}
+                                  {g.cat?(nombreObra(g.cat)!==g.valor?<span style={{color:C.sc}}> · catálogo: {nombreObra(g.cat)}</span>:<span style={{color:C.sc}}> · en catálogo</span>):(g.valor!=='(sin obra)'&&<span style={{color:C.wn}}> · sin catálogo</span>)}
+                                </div>
+                              </div>
+                              <div style={{textAlign:'right',flexShrink:0}}>
+                                <div style={{fontWeight:800,fontSize:12.5}}>{fmt(g.total)} €</div>
+                                {g.pend>0.01&&<div style={{fontSize:10,color:C.wn,fontWeight:600}}>pte. {fmt(g.pend)} €</div>}
+                              </div>
+                            </div>
+                            {abierta&&(
+                              <div style={{padding:'0 0 10px 20px'}}>
+                                <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',marginBottom:8}}>
+                                  <button style={{...S.sm(C.in),fontSize:10.5}} onClick={()=>{setView('facturas');setSubView('recibidas');setFEstado('todos');setFObra(g.valor==='(sin obra)'?'todas':g.valor);}}>📋 Ver en Facturas</button>
+                                  {!esLector()&&g.valor!=='(sin obra)'&&<>
+                                    <input list="bh-obras-rev" placeholder="Fundir toda la etiqueta en…" value={obrasUI.fundirEn||''} onChange={e=>setObrasUI(u=>({...u,fundirEn:e.target.value}))} style={{...S.input,flex:'1 1 160px',minWidth:0,padding:'6px 8px',fontSize:11}}/>
+                                    <BtnConfirm style={{...S.sm(C.sc),fontSize:10.5}} armStyle={{background:C.sc,color:'#fff'}} armedLabel={`¿Mover ${g.facturas.length} facturas? Toca otra vez`} onConfirm={()=>{
+                                      const dest=String(obrasUI.fundirEn||'').trim();if(!dest){notify('Escribe la obra de destino','error');return;}
+                                      if(sinAccion('obras','fundir obras'))return;
+                                      const r=fundirObras(invoices,obras,[g.valor],dest);origenCambio.current='obras: revisar · fundir';
+                                      setInvoices(r.invoices);persistObras(r.obras);setObrasUI(u=>({...u,abierta:dest,fundirEn:''}));
+                                      notify(`🔗 ${r.cambiadas} facturas → «${dest}»`);
+                                    }}>🔗 Fundir</BtnConfirm>
+                                  </>}
+                                </div>
+                                {facts.slice(0,obrasUI['verF:'+g.valor]||40).map(i=>{const st=estadoTxt(i);const editando=obrasUI.cambio&&obrasUI.cambio.id===i.id;return (
+                                  <div key={i.id} style={{padding:'6px 0',borderTop:`1px solid ${C.bd}22`,fontSize:11}}>
+                                    <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                                      <div style={{flex:1,minWidth:0}}>
+                                        <div style={{fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{i.tipo==='cobro'?'📤 ':''}{i.proveedor||'(sin nombre)'}</div>
+                                        <div style={{fontSize:10,color:C.mt}}>{fmtDate(i.fecha)} · nº {i.numFactura||'s/n'}{i.concepto?` · ${String(i.concepto).slice(0,40)}`:''}</div>
+                                      </div>
+                                      <div style={{textAlign:'right',flexShrink:0}}>
+                                        <div style={{fontWeight:700}}>{fmt(i.total)} €</div>
+                                        <div style={{fontSize:9.5,fontWeight:700,color:estadoCol(st)}}>{st}</div>
+                                      </div>
+                                      {!esLector()&&<button title="Cambiar la obra de esta factura" style={{...S.sm(editando?C.wn:C.mt),fontSize:10,padding:'4px 7px',minHeight:0}} onClick={()=>setObrasUI(u=>({...u,cambio:editando?null:{id:i.id,destino:String(i.obra||'')}}))}>🏗</button>}
+                                      {!esLector()&&<button title="Abrir la factura" style={{...S.sm(C.in),fontSize:10,padding:'4px 7px',minHeight:0}} onClick={()=>openEdit(i)}>✏️</button>}
+                                    </div>
+                                    {editando&&(
+                                      <div style={{display:'flex',gap:6,alignItems:'center',marginTop:6}}>
+                                        <input list="bh-obras-rev" autoFocus value={obrasUI.cambio.destino} onChange={e=>setObrasUI(u=>({...u,cambio:{...u.cambio,destino:e.target.value}}))} placeholder="Obra (del catálogo, de la lista o nueva)" style={{...S.input,flex:'1 1 0',minWidth:0,padding:'6px 8px',fontSize:11}}/>
+                                        <button style={{...S.sm(C.sc),fontSize:10.5}} onClick={()=>cambiarObra(i,String(obrasUI.cambio.destino||'').trim())}>✓ Guardar</button>
+                                        <button style={{...S.sm(C.mt),fontSize:10.5}} onClick={()=>setObrasUI(u=>({...u,cambio:null}))}>✕</button>
+                                      </div>
+                                    )}
+                                  </div>);})}
+                                {facts.length>(obrasUI['verF:'+g.valor]||40)&&<button style={{...S.sm(C.in),width:'100%',marginTop:6,fontSize:10.5}} onClick={()=>setObrasUI(u=>({...u,['verF:'+g.valor]:(u['verF:'+g.valor]||40)+80}))}>⬇ Mostrar más ({facts.length-(obrasUI['verF:'+g.valor]||40)} restantes)</button>}
+                              </div>
+                            )}
+                          </div>);})}
+                      {filas.length>(obrasUI.verN||60)&&<button style={{...S.sm(C.in),width:'100%',marginTop:8}} onClick={()=>setObrasUI(u=>({...u,verN:(u.verN||60)+60}))}>⬇ Mostrar más obras ({filas.length-(obrasUI.verN||60)} restantes)</button>}
+                    </div>
+                  );
+                })()}
                 {obrasUI.vista==='catalogo'&&(
                   <div style={S.card}>
                     {obras.length===0&&<div style={{fontSize:11,color:C.mt,marginBottom:6}}>El catálogo está vacío. Las {vals.length} etiquetas de obra que hay hoy en las facturas están en «🔗 Fundir valores»: júntalas ahí en obras de verdad, o baja la plantilla Excel y rellénala.</div>}
