@@ -120,7 +120,7 @@ async function guion(ruta){
 
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 const A=await guion(process.argv[2]||('../ref_produccion/'+REF));
-const B=await guion(process.argv[3]||'../web_subir/app/assets/bh10-APPV402.js');
+const B=await guion(process.argv[3]||'../web_subir/app/assets/bh10-APPV403.js');
 let fallos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 const nv=t=>String(t).replace(/v3\d\d/g,'vXXX');

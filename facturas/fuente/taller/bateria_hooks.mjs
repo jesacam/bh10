@@ -39,7 +39,7 @@ const oe=console.error, ow=console.warn;
 console.error=(...a)=>{dichos.push(a.map(x=>(x&&x.message)||String(x)).join(' '));};
 console.warn =(...a)=>{dichos.push(a.map(x=>(x&&x.message)||String(x)).join(' '));};
 
-const {default:App}=(await import('../web_subir/app/assets/bh10-APPV402.js'));
+const {default:App}=(await import('../web_subir/app/assets/bh10-APPV403.js'));
 const root=createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 const E=ms=>new Promise(r=>setTimeout(r,ms));

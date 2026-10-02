@@ -26,7 +26,7 @@ globalThis.fetch=async(url)=>{const u=String(url);const j=o=>({ok:true,status:20
   return j({});};
 window.bh10Adj={subir:async()=>'adj/x',enNube:async()=>({ok:true}),url:async()=>'https://x/y.pdf'};
 const errs=[];const oe=console.error;console.error=(...a)=>errs.push(String(a[0]).slice(0,200));
-const {default:App}=await import('/home/claude/fuente/web_subir/app/assets/bh10-APPV402.js');
+const {default:App}=await import('/home/claude/fuente/web_subir/app/assets/bh10-APPV403.js');
 createRoot(document.getElementById('root')).render(React.createElement(App));
 const esp=ms=>new Promise(r=>setTimeout(r,ms));
 await esp(2500);

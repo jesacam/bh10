@@ -418,7 +418,7 @@ const DebugHUD=()=>{
 // las gráficas con cada pulsación de tecla.
 const ChartBox=({title,children,h=200})=><div data-bh="grafica" style={{...S.card,marginTop:10}}><div style={{fontSize:11,fontWeight:700,color:C.mt,marginBottom:8,textTransform:'uppercase',letterSpacing:'.04em'}}>{title}</div><div style={{height:h}}>{children}</div></div>;
 const Tip=({active,payload,label})=>{if(!active||!payload?.length)return null;return (<div style={{background:C.sf,border:`1px solid ${C.bd}`,borderRadius:8,padding:'6px 10px',fontSize:11}}><div style={{fontWeight:600,marginBottom:3}}>{label}</div>{payload.map((p,i)=><div key={i} style={{color:p.color||p.fill}}>{p.name}: {fmt(p.value)} €</div>)}</div>);};
-const KPI=({id,label,value,sub,color,onClick,visibles,tipo,edit,ancho,arrastrando,onArrastrar,onSoltar,onMover,onAncho})=>{
+const KPI=({id,label,value,sub,color,onClick,visibles,tipo,edit,ancho,span,arrastrando,onArrastrar,onSoltar,onMover,onAncho})=>{
   color=color||C.ac;
     const full=ancho==='full';
     const pos=(visibles||[]).indexOf(id);
@@ -430,7 +430,7 @@ const KPI=({id,label,value,sub,color,onClick,visibles,tipo,edit,ancho,arrastrand
       onDrop={edit?(e=>{e.preventDefault();onSoltar(id);}):undefined}
       onDragEnd={edit?(()=>onArrastrar(null)):undefined}
       onClick={edit?undefined:onClick}
-      data-bh="caseta" style={{...S.card,flex:full?'1 1 100%':'1 1 calc(50% - 4px)',gridColumn:(full||tipo==='hero')?'1 / -1':'auto',minWidth:0,boxSizing:'border-box',position:'relative',opacity:arrastrando===id?0.45:1,
+      data-bh="caseta" style={{...S.card,flex:full?'1 1 100%':'1 1 calc(50% - 4px)',gridColumn:(full||tipo==='hero')?'1 / -1':(span>1?`span ${span}`:'auto'),minWidth:0,boxSizing:'border-box',position:'relative',opacity:arrastrando===id?0.45:1,
         ...(tipo==='hero'?{borderColor:(color||C.wn)+'99',padding:'14px 16px'}:{}),
         cursor:edit?'grab':(onClick?'pointer':'default'),
         ...(edit?{borderColor:C.in+'88',borderStyle:'dashed'}:(onClick?{borderColor:C.bd,transition:'border-color .15s'}:{}))}}
@@ -1366,6 +1366,10 @@ function App(){
   const [dashFrom,setDashFrom]=useState('');
   const [dashTo,setDashTo]=useState('');
   const [periodoAbierto,setPeriodoAbierto]=useState(false);   // v401 · el periodo es un chip; esto lo despliega
+  // v403 · Jesús: «se queda una casilla suelta». Para que la última caseta
+  // complete su fila hay que saber cuántas columnas caben: se mide la ventana.
+  const [anchoVista,setAnchoVista]=useState(()=>typeof window!=='undefined'?window.innerWidth:390);
+  useEffect(()=>{if(typeof window==='undefined')return;const f=()=>setAnchoVista(window.innerWidth);window.addEventListener('resize',f);return()=>window.removeEventListener('resize',f);},[]);
   const [kpiDetail,setKpiDetail]=useState(null); // {title,list}
   const [kpiCfg,setKpiCfg]=useState({orden:[],ancho:{}}); // colocación del Panel elegida por el usuario
   const [kpiEdit,setKpiEdit]=useState(false);
@@ -5979,6 +5983,15 @@ function App(){
             K.lastYearGastos>0&&{id:'yoy',p:{label:'Variación interanual',value:(K.yoyChange>=0?'+':'')+K.yoyChange+'%',color:K.yoyChange>10?C.dn:K.yoyChange<-5?C.sc:C.wn,sub:`${fmtK(K.thisYearGastos)} € vs ${fmtK(K.lastYearGastos)} € año ant.`}},
           ]);
           const visibles=defs.map(d=>d.id);
+          // Columnas de la rejilla (mismo cálculo que el CSS: casetas de 220 px con 8 de hueco
+          // dentro de un panel de 1100 como mucho; en móvil, dos). La última caseta de
+          // media anchura se estira para completar la fila y que no quede suelta.
+          const anchoPanel=Math.min(anchoVista,1100)-20;
+          const cols=anchoPanel<2*220+8?2:Math.max(2,Math.floor((anchoPanel+8)/228));
+          const medias=defs.filter(d=>d.p.tipo!=='hero'&&kpiAncho[d.id]!=='full').map(d=>d.id);
+          const resto=medias.length%cols;
+          const ultimaMedia=medias[medias.length-1];
+          const spanDe=(id)=>(resto&&id===ultimaMedia)?cols-resto+1:1;
 
           // «Hoy»: solo lo que pide acción; lo que está a cero no aparece
           const hoy=[
@@ -5991,7 +6004,7 @@ function App(){
 
           return(<>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(220px,calc(50% - 4px)),1fr))',gap:8,alignItems:'stretch'}}>
-              {defs.map(d=><KPI key={d.id} id={d.id} visibles={visibles} edit={kpiEdit} ancho={kpiAncho[d.id]} arrastrando={kpiDrag} onArrastrar={setKpiDrag} onSoltar={(sobre)=>{soltarKpi(kpiDrag,sobre);setKpiDrag(null);}} onMover={moverKpi} onAncho={alternaAncho} {...d.p}/>)}
+              {defs.map(d=><KPI key={d.id} id={d.id} visibles={visibles} edit={kpiEdit} ancho={kpiAncho[d.id]} span={spanDe(d.id)} arrastrando={kpiDrag} onArrastrar={setKpiDrag} onSoltar={(sobre)=>{soltarKpi(kpiDrag,sobre);setKpiDrag(null);}} onMover={moverKpi} onAncho={alternaAncho} {...d.p}/>)}
             </div>
 
             {/* ── HOY ── */}

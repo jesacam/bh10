@@ -10,7 +10,7 @@ const dom=new JSDOM('<!doctype html>',{url:'https://bh10group.com/app/'});
 globalThis.window=dom.window;globalThis.document=dom.window.document;
 window.__BH10_R=React;window.__BH10_JSX=JSXR;
 window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
-const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV402.js');
+const {__internos:I}=await import('../web_subir/app/assets/bh10-APPV403.js');
 const {resumen303,csv303,basesDe,parseNum}=I;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 
