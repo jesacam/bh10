@@ -5,9 +5,10 @@
 //   1. En Firestore, en empresas/{uid}/copias/{fecha} (comprimido; 30 días).
 //   2. En Cloudflare Workers KV (espacio COPIAS), fuera de Google: clave
 //      copia-{fecha} comprimida (90 días) y «ultima» con el resumen.
-//   3. Si hay DRIVE_FOLDER_ID, en esa carpeta de Google Drive del dueño (90 días):
-//      JSON tal cual, o zip cifrado si además hay COPIA_CLAVE. Se restaura desde
-//      la app con «Restaurar backup», igual que las copias manuales.
+//   3. Si hay DRIVE_FOLDER_ID, en la carpeta «Copias BH10» del Drive del dueño,
+//      reutilizando por turnos los archivos BH10_copia_libre_NN.json que él creó
+//      (tantos archivos, tantos días de copias): JSON tal cual, o zip cifrado con
+//      COPIA_CLAVE si DRIVE_ZIP_CIFRADO = "si". Se restaura desde la app con «Restaurar backup».
 // Sin coste: Firestore, KV y Drive dentro de sus tramos gratuitos.
 // Rutas (solo el dueño: cabecera X-Copia-Clave o Authorization: Bearer con su sesión de Firebase):
 //   GET /ahora            → hace la copia ahora mismo
@@ -108,23 +109,32 @@ async function zipCifrado(nombre, texto, clave) {
 }
 
 async function guardarDrive(env, tokDrive, copia, texto) {
-  const cifrada = !!env.COPIA_CLAVE;
+  // Las cuentas de servicio no tienen espacio en Drive, así que no pueden crear archivos en la carpeta del
+  // dueño; sí pueden escribir dentro de archivos suyos. Por eso la carpeta «Copias BH10» contiene un juego de
+  // archivos creados por el dueño (BH10_copia_libre_NN.json) que se van reutilizando: cada noche se escribe
+  // la copia en uno libre o en el más antiguo y se le pone el nombre del día. Tantos archivos, tantos días.
+  // La copia de Drive va en JSON tal cual salvo que DRIVE_ZIP_CIFRADO = "si" (y haya COPIA_CLAVE)
+  const cifrada = !!env.COPIA_CLAVE && String(env.DRIVE_ZIP_CIFRADO || '').toLowerCase() === 'si';
   const nombre = `BH10_copia_completa_${copia.fecha}.${cifrada ? 'zip' : 'json'}`;
   const mime = cifrada ? 'application/zip' : 'application/json';
   const blob = cifrada ? await zipCifrado(`BH10_copia_completa_${copia.fecha}.json`, texto, env.COPIA_CLAVE) : new Blob([texto], { type: mime });
-  const meta = JSON.stringify({ name: nombre, parents: [env.DRIVE_FOLDER_ID], mimeType: mime });
+  const H = { Authorization: 'Bearer ' + tokDrive };
+  const q = encodeURIComponent(`'${env.DRIVE_FOLDER_ID}' in parents and name contains 'BH10_copia' and trashed = false`);
+  const l = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&pageSize=200&fields=files(id,name,size)&supportsAllDrives=true&includeItemsFromAllDrives=true`, { headers: H });
+  if (!l.ok) throw new Error('Drive ' + l.status + ' ' + (await l.text()).slice(0, 200));
+  const archivos = (await l.json()).files || [];
+  const esHoy = (f) => f.name === nombre;
+  const libre = (f) => /^BH10_copia_libre_/i.test(f.name);
+  const fechado = (f) => /^BH10_copia_completa_\d{4}-\d{2}-\d{2}\./i.test(f.name);
+  const destino = archivos.find(esHoy) || archivos.filter(libre).sort((x, y) => x.name < y.name ? -1 : 1)[0] || archivos.filter(fechado).sort((x, y) => x.name < y.name ? -1 : 1)[0];
+  if (!destino) throw new Error('la carpeta de Drive no tiene archivos BH10_copia_libre_NN.json que reutilizar');
+  const meta = JSON.stringify({ name: nombre, mimeType: mime });
   const boundary = 'bh10' + Date.now();
   const cuerpo = new Blob([`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`, blob, `\r\n--${boundary}--`]);
-  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,size', { method: 'POST', headers: { Authorization: 'Bearer ' + tokDrive, 'Content-Type': 'multipart/related; boundary=' + boundary }, body: cuerpo });
+  const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${destino.id}?uploadType=multipart&supportsAllDrives=true&fields=id,name,size`, { method: 'PATCH', headers: { ...H, 'Content-Type': 'multipart/related; boundary=' + boundary }, body: cuerpo });
   if (!r.ok) throw new Error('Drive ' + r.status + ' ' + (await r.text()).slice(0, 200));
   const subida = await r.json();
-  // retención en Drive: solo las copias automáticas (nombre con prefijo) más viejas que el límite
-  const lim = new Date(Date.now() - (+env.DIAS_RETENCION_DRIVE || 90) * 86400000).toISOString();
-  const q = encodeURIComponent(`'${env.DRIVE_FOLDER_ID}' in parents and name contains 'BH10_copia_completa_' and createdTime < '${lim}' and trashed = false`);
-  const l = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`, { headers: { Authorization: 'Bearer ' + tokDrive } });
-  let borradas = 0;
-  if (l.ok) for (const f of ((await l.json()).files || [])) { const d = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?supportsAllDrives=true`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + tokDrive } }); if (d.ok) borradas++; }
-  return { archivo: subida.name, bytes: +subida.size || blob.size, borradas };
+  return { archivo: subida.name, bytes: +subida.size || blob.size, reutilizado: destino.name, archivos: archivos.length };
 }
 
 // ── Copia fuera de Google: Cloudflare Workers KV ────────────────────────────
