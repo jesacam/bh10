@@ -38,3 +38,4 @@ Historial:
 - v402 · 02-10-2026 · recibidas y emitidas reorganizadas: chips de cada día (pendientes, vencidas, 7 días, sin doc, dudosas · sin cobrar, vencidas, garantía), «Filtros» con contador y fichas de lo activo, orden y periodo visibles, acciones plegadas, barra de selección con Remesa C34 e Imputar obra. Marcha atrás: apuntar app/index.html a app-v401.js.
 - v403 · 02-10-2026 · la última caseta del panel completa su fila (no queda suelta en escritorio).
 - v404 · 02-10-2026 · recibidas: la barra de selección (Remesa C34, Imputar obra) va pegada al final de la lista en vez de fija, y el botón «Remesa (n)» de la tarjeta abre el C34 con las facturas marcadas una a una.
+- v405 · 02-10-2026 · la barra de selección de recibidas va anclada justo encima de la barra de pestañas (como los avisos) y solo mientras haya facturas marcadas.

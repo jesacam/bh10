@@ -6912,52 +6912,9 @@ function App(){
                 <span>{r.length} factura{r.length!==1?'s':''} recibida{r.length!==1?'s':''}</span>
                 <span>Total gastos: {fmt(r.filter(i=>i.tipo!=='anticipo').reduce((s,i)=>s+i.total,0))} €</span>
               </div>
+              {selected.size>0&&<div style={{height:72}}/>}
             </div>
           )}
-          {/* ── BARRA DE SELECCIÓN (v404): al final de la lista y pegada al borde inferior del scroll.
-              Jesús: «era tan sencillo como tener un selector de cada factura que quería pagar, y luego
-              generaba el sepa con aquellas seleccionadas». Sigue igual: casilla por factura; la barra
-              con «Remesa C34» ya no depende de una posición fija que en el móvil no se veía. */}
-          {selected.size>0&&(()=>{
-            const sel=invoices.filter(i=>selected.has(i.id));
-            return(
-              <div style={{position:'sticky',bottom:6,zIndex:58,marginTop:8}}>
-                {impObra&&(
-                  <div style={{...S.card,marginBottom:6,padding:'8px 10px'}}>
-              {/* v361 · imputar en bloque a una obra (con segundo toque; desvincula de la anterior) */}
-              {impObra&&selected.size>0&&(()=>{
-                const sel=invoices.filter(i=>selected.has(i.id));const dest=String(impObra.destino||'').trim();
-                const conOtra=sel.filter(i=>String(i.obra||'').trim()&&String(i.obra||'').trim()!==dest);
-                return (
-                  <div style={{marginTop:6,padding:'8px 10px',background:C.wn+'12',border:`1px solid ${C.wn}44`,borderRadius:8,fontSize:11}}>
-                    <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
-                      <input list="bh-obras-cat2" placeholder="Obra (del catálogo o nueva)" value={impObra.destino} onChange={e=>setImpObra({destino:e.target.value})} style={{...S.input,flex:'1 1 180px'}}/>
-                      <datalist id="bh-obras-cat2">{obras.map(o=><option key={o.id} value={nombreObra(o)}/>)}</datalist>
-                      <BtnConfirm style={S.sm(C.sc)} armStyle={{background:C.sc,color:'#fff'}} armedLabel={`¿Imputar ${sel.length} a «${dest}»? Toca otra vez`} onConfirm={()=>{
-                        if(!dest){notify('Escribe la obra','error');return;}
-                        if(sinAccion('obras','imputar obras'))return;
-                        origenCambio.current='obras: imputar en bloque';
-                        const ids=new Set(sel.map(i=>i.id));setInvoices(prev=>prev.map(i=>ids.has(i.id)?{...i,obra:dest}:i));
-                        if(!obraDelCatalogo(dest,obras))persistObras([...obras,{id:uid(),alias:dest,calle:'',numero:'',cp:'',municipio:'',provincia:'',activa:true,presupuestoGasto:0,presupuestoVenta:0,cliente:'',viviendas:0,otros:[]}]);
-                        setImpObra(null);clearSelection();notify(`🏗 ${sel.length} facturas imputadas a «${dest}»${conOtra.length?` (${conOtra.length} venían de otra obra)`:''}`);
-                      }}>Imputar {sel.length}</BtnConfirm>
-                    </div>
-                    <div style={{color:C.mt,marginTop:4}}>{sel.length} seleccionadas{conOtra.length?<span style={{color:C.wn}}> · {conOtra.length} ya tienen otra obra y se desvincularán ({[...new Set(conOtra.map(i=>String(i.obra).trim()))].slice(0,4).join(', ')}{conOtra.length>4?'…':''})</span>:''}</div>
-                  </div>
-                );
-              })()}
-                  </div>
-                )}
-                <div style={{background:C.sf,border:`1px solid ${C.in}66`,borderRadius:12,padding:'8px 10px',boxShadow:'0 6px 20px rgba(0,0,0,.45)',display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
-                  <span style={{fontSize:11,fontWeight:700,flex:'1 1 auto',minWidth:0}}>{selected.size} seleccionada{selected.size!==1?'s':''} · <span style={{color:C.in}}>{fmt(sel.reduce((s,i)=>s+impRemesa(i),0))} €</span></span>
-                  <button style={{...S.sm(C.mt),padding:'6px 8px',fontSize:11}} onClick={selectAllLocal} title="Marcar todas las pendientes de esta lista">☑ Todas ({pendientesPago.length})</button>
-                  <button style={{...S.sm(C.sc),padding:'6px 10px',fontSize:11,fontWeight:700}} onClick={()=>setShowSepa(true)}>🏦 Remesa C34</button>
-                  {!esLector()&&<button style={{...S.sm(impObra?C.wn:C.in),padding:'6px 10px',fontSize:11}} onClick={()=>setImpObra(p=>p?null:{destino:''})}>🏗 Obra</button>}
-                  <button style={{...S.sm(C.mt),padding:'6px 8px',fontSize:11}} onClick={()=>{clearSelection();setImpObra(null);}}>✕</button>
-                </div>
-              </div>
-            );
-          })()}
         </>);
       })()}
 
@@ -13047,6 +13004,51 @@ function App(){
         ))}
       </div>
       {/* ═══ BOTÓN + CON ACCIONES RÁPIDAS ═══ */}
+      {/* ═══ BARRA DE SELECCIÓN DE RECIBIDAS (v405) ═══
+          Jesús: «podría aparecer justo encima de la barra inferior solo cuando se
+          seleccionan las facturas». Anclada a la barra de pestañas como los demás
+          avisos, y solo mientras haya facturas marcadas en Recibidas. */}
+      {view==='facturas'&&subView==='recibidas'&&selected.size>0&&(()=>{
+        const sel=invoices.filter(i=>selected.has(i.id));
+        const pendTodas=recibidas.filter(i=>i.tipo!=='anticipo'&&!['pagada','aplicado','anticipo_libre'].includes(getEstado(i,invoices)));
+        return(
+          <div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:59,padding:'0 8px 6px',boxSizing:'border-box'}}>
+                {impObra&&(
+                  <div style={{...S.card,marginBottom:6,padding:'8px 10px'}}>
+              {/* v361 · imputar en bloque a una obra (con segundo toque; desvincula de la anterior) */}
+              {impObra&&selected.size>0&&(()=>{
+                const sel=invoices.filter(i=>selected.has(i.id));const dest=String(impObra.destino||'').trim();
+                const conOtra=sel.filter(i=>String(i.obra||'').trim()&&String(i.obra||'').trim()!==dest);
+                return (
+                  <div style={{marginTop:6,padding:'8px 10px',background:C.wn+'12',border:`1px solid ${C.wn}44`,borderRadius:8,fontSize:11}}>
+                    <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+                      <input list="bh-obras-cat2" placeholder="Obra (del catálogo o nueva)" value={impObra.destino} onChange={e=>setImpObra({destino:e.target.value})} style={{...S.input,flex:'1 1 180px'}}/>
+                      <datalist id="bh-obras-cat2">{obras.map(o=><option key={o.id} value={nombreObra(o)}/>)}</datalist>
+                      <BtnConfirm style={S.sm(C.sc)} armStyle={{background:C.sc,color:'#fff'}} armedLabel={`¿Imputar ${sel.length} a «${dest}»? Toca otra vez`} onConfirm={()=>{
+                        if(!dest){notify('Escribe la obra','error');return;}
+                        if(sinAccion('obras','imputar obras'))return;
+                        origenCambio.current='obras: imputar en bloque';
+                        const ids=new Set(sel.map(i=>i.id));setInvoices(prev=>prev.map(i=>ids.has(i.id)?{...i,obra:dest}:i));
+                        if(!obraDelCatalogo(dest,obras))persistObras([...obras,{id:uid(),alias:dest,calle:'',numero:'',cp:'',municipio:'',provincia:'',activa:true,presupuestoGasto:0,presupuestoVenta:0,cliente:'',viviendas:0,otros:[]}]);
+                        setImpObra(null);clearSelection();notify(`🏗 ${sel.length} facturas imputadas a «${dest}»${conOtra.length?` (${conOtra.length} venían de otra obra)`:''}`);
+                      }}>Imputar {sel.length}</BtnConfirm>
+                    </div>
+                    <div style={{color:C.mt,marginTop:4}}>{sel.length} seleccionadas{conOtra.length?<span style={{color:C.wn}}> · {conOtra.length} ya tienen otra obra y se desvincularán ({[...new Set(conOtra.map(i=>String(i.obra).trim()))].slice(0,4).join(', ')}{conOtra.length>4?'…':''})</span>:''}</div>
+                  </div>
+                );
+              })()}
+                  </div>
+                )}
+                <div style={{background:C.sf,border:`1px solid ${C.in}66`,borderRadius:12,padding:'8px 10px',boxShadow:'0 6px 20px rgba(0,0,0,.45)',display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                  <span style={{fontSize:11,fontWeight:700,flex:'1 1 auto',minWidth:0}}>{selected.size} seleccionada{selected.size!==1?'s':''} · <span style={{color:C.in}}>{fmt(sel.reduce((s,i)=>s+impRemesa(i),0))} €</span></span>
+                  <button style={{...S.sm(C.mt),padding:'6px 8px',fontSize:11}} onClick={()=>setSelected(new Set(pendTodas.map(i=>i.id)))} title="Marcar todas las facturas pendientes de pago">☑ Todas ({pendTodas.length})</button>
+                  <button style={{...S.sm(C.sc),padding:'6px 10px',fontSize:11,fontWeight:700}} onClick={()=>setShowSepa(true)}>🏦 Remesa C34</button>
+                  {!esLector()&&<button style={{...S.sm(impObra?C.wn:C.in),padding:'6px 10px',fontSize:11}} onClick={()=>setImpObra(p=>p?null:{destino:''})}>🏗 Obra</button>}
+                  <button style={{...S.sm(C.mt),padding:'6px 8px',fontSize:11}} onClick={()=>{clearSelection();setImpObra(null);}}>✕</button>
+                </div>
+          </div>
+        );
+      })()}
       {!ES_APP&&<div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:1100,bottom:ALTO_TAB,zIndex:60,background:'#3a2a05',color:'#F59E0B',fontSize:10,fontWeight:800,textAlign:'center',padding:'5px 8px'}}>🧪 MODO PRUEBA · datos locales, sin nube · tu app real está en bh10group.com/app/</div>}
       {ES_APP&&(()=>{
         const st=(typeof window!=='undefined'&&window.storage&&typeof window.storage.getStatus==='function')?window.storage.getStatus():null;

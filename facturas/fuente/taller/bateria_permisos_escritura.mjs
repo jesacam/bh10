@@ -80,7 +80,7 @@ window.IntersectionObserver=class{observe(){}unobserve(){}disconnect(){}};window
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.BH10_EMPRESA={sub:'',nombre:'BIG HOUSE 2010'};window.BH10_ROL='admin';
 window.BH10_PERMISOS={facturas:'admin',contratos:'lectura',nominas:'admin',seguros:'',tesoreria:'',ajustes:'',acciones:{exportar:false,pagos:false},sub:{emitidas:'',nominas:'',fichajes:'admin'}};
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV404.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV405.js');
 const root=createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 await new Promise(r=>setTimeout(r,900));

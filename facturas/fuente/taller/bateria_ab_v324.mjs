@@ -134,7 +134,7 @@ async function recorrer(ruta){
 const REF=fs.readdirSync('ref_produccion').find(f=>/^bh10-APPV\d+\.js$/.test(f));
 if(!REF)throw new Error('ref_produccion/ no tiene ningún bh10-APPV*.js — ver su LEEME.txt');
 const RUTA_A=process.argv[2]||('../ref_produccion/'+REF);
-const RUTA_B=process.argv[3]||'../web_subir/app/assets/bh10-APPV404.js';
+const RUTA_B=process.argv[3]||'../web_subir/app/assets/bh10-APPV405.js';
 console.log('  A: '+RUTA_A+'\n  B: '+RUTA_B);
 // v369 (06-09-2026) · la previsión de tesorería tiene desde v348 un MOTOR
 // distinto al del bundle desplegado de referencia (presupuesto anual de
