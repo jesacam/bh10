@@ -13,3 +13,9 @@ crons = ["15 1 * * *"]
 FIREBASE_PROJECT = "b10h-facturas"
 DIAS_RETENCION_FIRESTORE = "30"
 DIAS_RETENCION_DRIVE = "90"
+DIAS_RETENCION_KV = "90"
+
+# Copia fuera de Google: espacio de Workers KV «bh10-copias»
+[[kv_namespaces]]
+binding = "COPIAS"
+id = "ee0383f1ed8f421fb800ad65852528a6"
