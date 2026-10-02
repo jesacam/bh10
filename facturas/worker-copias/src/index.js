@@ -7,7 +7,7 @@
 //      copia-{fecha} comprimida (90 días) y «ultima» con el resumen.
 //   3. Si hay DRIVE_FOLDER_ID, en la carpeta «Copias BH10» del Drive del dueño,
 //      reutilizando por turnos los archivos BH10_copia_libre_NN.json que él creó
-//      (tantos archivos, tantos días de copias): JSON tal cual, o zip cifrado con
+//      (tantos archivos, tantos días de copias; hay 90): JSON tal cual, o zip cifrado con
 //      COPIA_CLAVE si DRIVE_ZIP_CIFRADO = "si". Se restaura desde la app con «Restaurar backup».
 // Sin coste: Firestore, KV y Drive dentro de sus tramos gratuitos.
 // Rutas (solo el dueño: cabecera X-Copia-Clave o Authorization: Bearer con su sesión de Firebase):
