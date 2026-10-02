@@ -18,7 +18,7 @@ window.matchMedia=()=>({matches:false,addListener(){},removeListener(){},addEven
 window.__BH10_R=React;window.__BH10_JSX=JSXR;window.__BH10_STANDALONE=true;
 window.storage={get:async()=>null,set:async(k,v)=>({key:k,value:v}),delete:async k=>({key:k}),list:async()=>({keys:[]}),getStatus:()=>({fase:'ok'})};
 const A=(await import('../ref/bh10-REF313.js')).__internos;
-const B=(await import('../web_subir/app/assets/bh10-APPV400.js')).__internos;
+const B=(await import('../web_subir/app/assets/bh10-APPV401.js')).__internos;
 let fallos=0;const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m);if(!c)fallos++;};
 const J=x=>JSON.stringify(x);
 ok(!!A&&!!B&&typeof A.transferenciasEmbargo==='function','__internos disponible en ambos bundles');

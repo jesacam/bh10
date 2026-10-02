@@ -157,10 +157,13 @@ const DEBUG_LAYOUT=false;
 // puede reordenarlas y decidir cuáles ocupan media pantalla o el ancho entero;
 // su elección se guarda en la nube (bh10-kpis) y se respeta en cada dispositivo.
 const KPI_IDS=[
-  'h-pendpago','h-vencido',
-  'n-buzon',   // v375 · se coloca como cualquier otra caseta (Jesús: «con capacidad de moverlo como el resto»)
-  'n-recibidas','n-emitidas','n-clientes','n-proveedores','n-obras','n-contratos','n-c34prov','n-c34nom','n-personal','n-flota','n-traspasos',
-  'balance','facturado','pagado','pendiente','vencido','ingresos','ptecobro','ivasop','ivarep','ivaliq','estructura','anticipos','retgar','diaspago','ejecgasto','ejecventa','yoy'];
+  // v401 · Jesús aprobó el panel nuevo: el dinero arriba, como en el ordenador.
+  // Los contadores (recibidas, clientes, personal…) ya no son casetas: van en
+  // la fila «Accesos» del final. Balance, pendiente y vencido del periodo e IVA
+  // soportado/repercutido desaparecen: estaban repetidos o viven en Gestión › IVA.
+  'h-pendpago','h-vencido','ptecobro','sem4','ivatrim','facturado','diaspago',
+  'pagado','ingresos','estructura','anticipos','retgar','ejecgasto','ejecventa','yoy'];
+const KPI_V=2;   // sube cuando cambia el orden de fábrica: la colocación guardada se reinicia una vez
 // ═══ ANCLAJE INFERIOR ═══
 // iOS reserva env(safe-area-inset-bottom) (34 pt) bajo el indicador de inicio.
 // Reservarlo entero dejaba una franja muerta enorme bajo la barra de pestañas,
@@ -427,12 +430,18 @@ const KPI=({id,label,value,sub,color,onClick,visibles,tipo,edit,ancho,arrastrand
       onDrop={edit?(e=>{e.preventDefault();onSoltar(id);}):undefined}
       onDragEnd={edit?(()=>onArrastrar(null)):undefined}
       onClick={edit?undefined:onClick}
-      data-bh="caseta" style={{...S.card,flex:full?'1 1 100%':'1 1 calc(50% - 4px)',minWidth:0,boxSizing:'border-box',position:'relative',opacity:arrastrando===id?0.45:1,
+      data-bh="caseta" style={{...S.card,flex:full?'1 1 100%':'1 1 calc(50% - 4px)',gridColumn:(full||tipo==='hero')?'1 / -1':'auto',minWidth:0,boxSizing:'border-box',position:'relative',opacity:arrastrando===id?0.45:1,
+        ...(tipo==='hero'?{borderColor:(color||C.wn)+'99',padding:'14px 16px'}:{}),
         cursor:edit?'grab':(onClick?'pointer':'default'),
         ...(edit?{borderColor:C.in+'88',borderStyle:'dashed'}:(onClick?{borderColor:C.bd,transition:'border-color .15s'}:{}))}}
       onMouseEnter={e=>{if(onClick&&!edit)e.currentTarget.style.borderColor=C.in;}}
       onMouseLeave={e=>{if(onClick&&!edit)e.currentTarget.style.borderColor=C.bd;}}>
-      {tipo==='cont'?(<>
+      {tipo==='hero'?(<>
+        <div style={{fontSize:10,fontWeight:800,letterSpacing:'.08em',color}}>{label}</div>
+        <div style={{fontSize:30,fontWeight:900,letterSpacing:'-.03em',lineHeight:1.1,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{value}</div>
+        {sub&&<div style={{fontSize:12,color:C.mt,marginTop:3}}>{sub}</div>}
+        {onClick&&!edit&&<div style={{fontSize:12,fontWeight:700,color:C.ac,marginTop:6}}>Ver facturas recibidas pendientes →</div>}
+      </>):tipo==='cont'?(<>
         <div style={{fontSize:11,fontWeight:700,color:C.mt,textAlign:'center',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>
         <div style={{fontSize:full?26:20,fontWeight:800,color,textAlign:'center',lineHeight:1.2}}>{value}</div>
       </>):(<>
@@ -1116,6 +1125,7 @@ function App(){
   const {invoicesAll,setInvoices,showForm,setShowForm,dupOk,setDupOk,editing,setEditing,form,setForm,search,setSearch,fEstado,setFEstado,fObra,setFObra,fTipo,setFTipo,fProvSel,setFProvSel,fusOrigen,setFusOrigen,pendProvSel,setPendProvSel,fusIgnoradas,setFusIgnoradas,fusCfg,setFusCfg,fusManual,setFusManual,fusDestino,setFusDestino,subView,setSubView,fProv,setFProv,focoProv,setFocoProv,focoCli,setFocoCli,expObra,setExpObra,sortMode,setSortMode,sortCol,setSortCol,sortDir,setSortDir,confirmDel,setConfirmDel,pagoModal,setPagoModal,pagoForm,setPagoForm,expandedId,setExpandedId,linkModal,setLinkModal,scanning,setScanning,selected,setSelected,showSepa,setShowSepa,sepaDate,setSepaDate,sepaSustituir,setSepaSustituir,provCat,setProvCat,cliCat,setCliCat,provModal,setProvModal,provForm,setProvForm,provApplyAll,setProvApplyAll,precioVer,setPrecioVer,archivador,setArchivador,detalleScan,setDetalleScan,docVer,setDocVer,ordenLista,setOrdenLista,persistCliCat,persistProvCat}=_alm_fac;
   const invoices=useMemo(()=>invoicesAll.filter(i=>!(i&&i._del)),[invoicesAll]);
   const [view,setView]=useState('dashboard');
+  const [gesView,setGesView]=useState('iva');   // v401 · apartado abierto en la pestaña Gestión (iva | gestoria)
   // Miembros: si el área está vetada, la vista rebota al Panel; y se publica
   // el área actual para que esLector() bloquee la edición donde no es admin.
   // v363 · el área se fija también DURANTE el render: si solo se fijara en el efecto, la primera
@@ -1355,6 +1365,7 @@ function App(){
   };
   const [dashFrom,setDashFrom]=useState('');
   const [dashTo,setDashTo]=useState('');
+  const [periodoAbierto,setPeriodoAbierto]=useState(false);   // v401 · el periodo es un chip; esto lo despliega
   const [kpiDetail,setKpiDetail]=useState(null); // {title,list}
   const [kpiCfg,setKpiCfg]=useState({orden:[],ancho:{}}); // colocación del Panel elegida por el usuario
   const [kpiEdit,setKpiEdit]=useState(false);
@@ -5695,10 +5706,10 @@ function App(){
 
   // Styles → moved to module level (S)
   // ═══ PANEL: colocación de las tarjetas ═══
-  const persistKpis=(next)=>{setKpiCfg(next);window.storage.set('bh10-kpis',JSON.stringify(next)).catch(()=>{});};
-  const kpiAncho=kpiCfg.ancho||{};
+  const persistKpis=(next)=>{const n={...next,v:KPI_V};setKpiCfg(n);window.storage.set('bh10-kpis',JSON.stringify(n)).catch(()=>{});};
+  const kpiAncho=(kpiCfg.v||0)>=KPI_V?(kpiCfg.ancho||{}):{};
   // Orden efectivo: lo guardado primero, y detrás cualquier tarjeta nueva
-  const kpiOrden=(()=>{const g=(kpiCfg.orden||[]).filter(x=>KPI_IDS.includes(x));return [...g,...KPI_IDS.filter(x=>!g.includes(x))];})();
+  const kpiOrden=(()=>{const g=((kpiCfg.v||0)>=KPI_V?(kpiCfg.orden||[]):[]).filter(x=>KPI_IDS.includes(x));return [...g,...KPI_IDS.filter(x=>!g.includes(x))];})();
   const ordenaKpis=(arr)=>arr.filter(Boolean).sort((a,b)=>kpiOrden.indexOf(a.id)-kpiOrden.indexOf(b.id));
   // Mueve una tarjeta saltando por encima de las que ahora no se ven
   const moverKpi=(id,dir,visibles)=>{
@@ -5722,174 +5733,8 @@ function App(){
 
   // Combobox → moved to module level
 
-  // ═══ DASHBOARD ═══
-  const Dashboard=()=>{
-
-    const agingData=[{name:'0-30d',value:K.aging.a030},{name:'31-60d',value:K.aging.a3160},{name:'61-90d',value:K.aging.a6190},{name:'>90d',value:K.aging.a90}].filter(d=>d.value>0);
-    return(
-      <div style={{padding:10}}>
-      {/* ── FILTRO DE PERIODO ── */}
-      {(()=>{
-        const now=new Date();
-        const iso=d=>d.toISOString().slice(0,10);
-        const setPreset=(f,t)=>{setDashFrom(f);setDashTo(t);};
-        const y=now.getFullYear(),mth=now.getMonth();
-        const chips=[
-          ['Todo',()=>setPreset('','')],
-          ['Este mes',()=>setPreset(iso(new Date(y,mth,1)),iso(new Date(y,mth+1,0)))],
-          ['Trimestre',()=>{const q=Math.floor(mth/3);setPreset(iso(new Date(y,q*3,1)),iso(new Date(y,q*3+3,0)));}],
-          ['Este año',()=>setPreset(y+'-01-01',y+'-12-31')],
-          ['Año pasado',()=>setPreset((y-1)+'-01-01',(y-1)+'-12-31')],
-        ];
-        const activo=dashFrom||dashTo;
-        return(
-          <div style={{...S.card,marginBottom:10,padding:'9px 10px'}}>
-            <div style={{fontSize:9,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>📅 Periodo</div>
-            {/* Los cinco atajos reparten el ancho en una sola fila */}
-            <div style={{display:'flex',gap:4,flexWrap:'nowrap'}}>
-              {chips.map(([l,fn])=><button key={l} style={{...S.sm(C.in),flex:'1 1 0',minWidth:0,fontSize:10,padding:'6px 2px',minHeight:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>)}
-            </div>
-            {/* Desde/Hasta con base 0: sin ancho mínimo no se solapan en pantalla estrecha */}
-            <div style={{display:'flex',gap:6,marginTop:7,alignItems:'flex-end'}}>
-              <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Desde</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashFrom} onChange={e=>setDashFrom(e.target.value)}/></label>
-              <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Hasta</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashTo} onChange={e=>setDashTo(e.target.value)}/></label>
-              {activo&&<button style={{...S.sm(C.mt),flexShrink:0,padding:'6px 9px',fontSize:11,minHeight:34}} onClick={()=>setPreset('','')}>✕</button>}
-            </div>
-            {activo&&<div style={{fontSize:10,color:C.sc,marginTop:6,fontWeight:600}}>Mostrando datos {dashFrom?'desde '+fmtDate(dashFrom):''} {dashTo?'hasta '+fmtDate(dashTo):''}</div>}
-          </div>
-        );
-      })()}
-
-      {invoices.length===0&&<div style={{...S.card,marginBottom:10,textAlign:'center',color:C.mt,fontSize:12,padding:'14px'}}>Aún no hay operaciones — entra en 📥 Recibidas o 📤 Emitidas para registrar la primera</div>}
-
-
-
-
-        {/* ── INDICADORES: el usuario elige orden y ancho ── */}
-        {(()=>{
-          const cat=obras.filter(o=>o.activa!==false);
-          const totalPptoG=cat.reduce((s,o)=>s+(+o.presupuestoGasto||0),0);
-          const totalPptoV=cat.reduce((s,o)=>s+(+o.presupuestoVenta||0),0);
-          const gastadoObras=K.gastos.filter(i=>i.obra&&cat.some(o=>obraDisplay(o)===i.obra)).reduce((s,i)=>s+i.total,0);
-          const facturadoObras=K.cobros.filter(i=>i.obra&&cat.some(o=>obraDisplay(o)===i.obra)).reduce((s,i)=>s+i.total,0);
-          const detalleGasto=cat.map(o=>{const disp=obraDisplay(o);return{obra:o,disp,ppto:+o.presupuestoGasto||0,real:K.gastos.filter(i=>i.obra===disp).reduce((s,i)=>s+i.total,0)};}).filter(x=>x.ppto>0||x.real>0);
-          const detalleVenta=cat.map(o=>{const disp=obraDisplay(o);return{obra:o,disp,ppto:+o.presupuestoVenta||0,real:K.cobros.filter(i=>i.obra===disp).reduce((s,i)=>s+i.total,0)};}).filter(x=>x.ppto>0||x.real>0);
-          const retG=invoices.filter(i=>i.tipo==='cobro'&&(i.retGarImp||0)>0&&!i.retGarDevuelta);
-          const retGTot=retG.reduce((s,i)=>s+i.retGarImp,0);
-          const ivaLiq=K.totalIvaRepercutido-K.totalIva;
-
-          // Cada entrada: {id, props}. Se ordenan y luego se pintan.
-          // Cabecera: saldo real de proveedores (sin filtrar por periodo)
-          const impPend=recibidas.filter(i=>i.tipo!=='anticipo'&&!['pagada','aplicado','anticipo_libre'].includes(getEstado(i,invoices)));
-          const heroPend=impPend.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);
-          const heroVenc=impPend.filter(i=>['vencida','parcial_vencida'].includes(getEstado(i,invoices))).reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);
-          const flotaAl=flota.filter(v=>v.activa!==false).flatMap(v=>[v.itv,v.seguroVto,v.mantFecha]).map(daysTo).filter(d=>d!==null&&d<=30).length+polizas.filter(p=>p.activa!==false).map(p=>daysTo(p.vto)).filter(d=>d!==null&&d<=30).length;
-
-          const defs=ordenaKpis([
-            {id:'h-pendpago',p:{label:'PENDIENTE DE PAGO',value:fmt(heroPend)+' €',color:heroPend>0.01?C.wn:C.sc,sub:'tocar para ver',onClick:()=>{setView('facturas');setSubView('recibidas');setFEstado('impagada');}}},
-            {id:'h-vencido',p:{label:'VENCIDO',value:fmt(heroVenc)+' €',color:heroVenc>0.01?C.dn:C.sc,sub:'tocar para ver',onClick:()=>{setView('facturas');setSubView('recibidas');setFEstado('vencida');}}},
-            // v375 · el buzón, solo para el dueño: ni siquiera se le ofrece la
-            // caseta a un miembro, así no le ocupa sitio en su panel.
-            // v376 · Jesús: «me gustaría verlo siempre para que tenga su lugar fijo
-            // en el panel». Antes aparecía y desaparecía según hubiera algo, y una
-            // caseta que se mueve de sitio sola no sirve para acostumbrarse a ella.
-            // Ahora está siempre para el dueño; cuando no hay nada, en gris y con
-            // «sin novedades».
-            ...(!esMiembro()?[{id:'n-buzon',p:{tipo:'cont',label:'📥 Buzón',
-              value:buzonTodo.total,color:buzonTodo.urgente>0?C.dn:(buzonTodo.total>0?C.wn:C.mt),
-              sub:buzonTodo.total===0?'sin novedades'
-                :[buzonTodo.firmas&&`${buzonTodo.firmas} firmados`,buzonTodo.clientes&&`${buzonTodo.clientes} de clientes`,
-                   buzonTodo.proveedores&&`${buzonTodo.proveedores} de proveedores`,buzonTodo.derechos&&`${buzonTodo.derechos} derechos`]
-                   .filter(Boolean).join(' · '),
-              onClick:()=>setBuzonAbierto(true)}}]:[]),
-            {id:'n-recibidas',p:{tipo:'cont',label:'📥 Recibidas',value:recibidas.length,color:C.in,onClick:()=>{setView('facturas');setSubView('recibidas');}}},
-            {id:'n-emitidas',p:{tipo:'cont',label:'📤 Emitidas',value:emitidas.length,color:C.in,onClick:()=>{setView('facturas');setSubView('emitidas');}}},
-            {id:'n-clientes',p:{tipo:'cont',label:'👤 Clientes',value:clientes.length,color:C.in,onClick:()=>{setView('facturas');setSubView('clientes');}}},
-            {id:'n-proveedores',p:{tipo:'cont',label:'🏪 Proveedores',value:proveedores.length,color:C.in,onClick:()=>{setView('facturas');setSubView('proveedores');}}},
-            {id:'n-obras',p:{tipo:'cont',label:'🏗️ Obras',value:obrasAll.length,color:C.in,onClick:()=>{setView('contratos');setConView('obras');}}},
-            {id:'n-contratos',p:{tipo:'cont',label:'📑 Contratos',value:contratos.length,color:C.in,onClick:()=>setView('contratos')}},
-            {id:'n-c34prov',p:{tipo:'cont',label:'🏦 C34 Proveedores',value:remesas.filter(r=>r.tipo==='prov').length,color:C.in,onClick:()=>{setView('facturas');setSubView('remesas');}}},
-            {id:'n-traspasos',p:{tipo:'cont',label:'🏢 Traspasos',value:traspasos.length,color:C.in,onClick:()=>setTraspModal('lista')}},
-            {id:'n-c34nom',p:{tipo:'cont',label:'👷 C34 Nóminas',value:remesas.filter(r=>r.tipo==='nom').length,color:C.in,onClick:()=>{setView('nominas');setNomView('remesas');}}},
-            {id:'n-personal',p:{tipo:'cont',label:'👷 Personal',value:employees.filter(em=>em.activo!==false).length,color:C.in,onClick:()=>setView('nominas')}},
-            {id:'n-flota',p:{tipo:'cont',label:'🛡️ Seguros'+(flotaAl>0?' ⚠':''),value:(polizas||[]).filter(p=>p&&p.activa!==false).length,color:flotaAl>0?C.wn:C.in,onClick:()=>setView('flota')}},
-            (K.totalIngresos>0||K.totalFact>0)&&{id:'balance',p:{label:'Balance',value:(K.totalIngresos-K.totalFact>=0?'+':'')+fmtK(K.totalIngresos-K.totalFact)+' €',color:K.totalIngresos>=K.totalFact?C.sc:C.dn,sub:'Ingresos − Gastos'}},
-            {id:'facturado',p:{label:'Total facturado',value:fmtK(K.totalFact)+' €',sub:`${K.gastos.length} facturas · toca para ver`,onClick:()=>setKpiDetail({title:'Gastos del periodo',list:K.gastos})}},
-            {id:'pagado',p:{label:'Pagado',value:fmtK(K.totalPagado)+' €',color:C.sc,sub:`${pct(K.totalPagado,K.totalFact)}% del total`,onClick:()=>setKpiDetail({title:'Facturas con pagos',list:K.gastos.filter(i=>getTotalPagado(i,invoices)>0)})}},
-            {id:'pendiente',p:{label:'Pendiente de pago',value:fmtK(K.totalPendiente)+' €',color:K.totalPendiente>0?C.wn:C.sc,onClick:()=>setKpiDetail({title:'Pendientes de pago',list:K.gastos.filter(i=>{const e=getEstado(i,invoices);return e!=='pagada'&&getSaldo(i,invoices)>0.01;})})}},
-            {id:'vencido',p:{label:'Vencido impagado',value:fmtK(K.totalVencido)+' €',color:K.totalVencido>0?C.dn:C.sc,sub:K.totalVencido>0?'⚠ Requiere atención':'OK',onClick:()=>setKpiDetail({title:'Vencidas impagadas',list:K.gastos.filter(i=>{const e=getEstado(i,invoices);return e==='vencida'||e==='parcial_vencida';})})}},
-            K.totalIngresos>0&&{id:'ingresos',p:{label:'Ingresos emitidos',value:fmtK(K.totalIngresos)+' €',color:C.sc,sub:`Cobrado: ${fmtK(K.totalCobrado)} €`,onClick:()=>setKpiDetail({title:'Facturas emitidas',list:K.cobros})}},
-            K.totalPteCobro>0&&{id:'ptecobro',p:{label:'Pendiente de cobro',value:fmtK(K.totalPteCobro)+' €',color:'#F97316',sub:'Facturas emitidas sin cobrar',onClick:()=>setKpiDetail({title:'Pendientes de cobro',list:K.cobros.filter(i=>getSaldo(i,invoices)>0.01)})}},
-            {id:'ivasop',p:{label:'IVA soportado',value:fmtK(K.totalIva)+' €',color:C.in,sub:'Facturas recibidas',onClick:()=>setKpiDetail({title:'Facturas con IVA soportado',list:K.gastos.filter(i=>(i.iva||0)>0)})}},
-            K.totalIvaRepercutido>0&&{id:'ivarep',p:{label:'IVA repercutido',value:fmtK(K.totalIvaRepercutido)+' €',color:C.sc,sub:'Facturas emitidas',onClick:()=>setKpiDetail({title:'Facturas con IVA repercutido',list:K.cobros.filter(i=>(i.iva||0)>0)})}},
-            (K.totalIva>0||K.totalIvaRepercutido>0)&&{id:'ivaliq',p:{label:'Liquidación IVA',value:(ivaLiq>=0?'+':'')+fmtK(ivaLiq)+' €',color:ivaLiq>0?C.dn:C.sc,sub:ivaLiq>0?'A ingresar (Mod. 303)':'A compensar',onClick:()=>setKpiDetail({title:'Liquidación IVA — repercutido y soportado',list:[...K.cobros,...K.gastos].filter(i=>(i.iva||0)>0)})}},
-            {id:'estructura',p:{label:'Gastos estructura /mes',value:fmtK(K.totalEstructuraMes)+' €',color:C.vt,sub:`${fmtK(K.totalEstructura)} € acum.`,onClick:()=>setKpiDetail({title:'Gastos de estructura',list:K.gastos.filter(i=>i.esEstructural||i.tipo==='estructura')})}},
-            K.totalAnticiposLibres>0&&{id:'anticipos',p:{label:'Anticipos sin aplicar',value:fmtK(K.totalAnticiposLibres)+' €',color:C.ch[4],sub:`${anticiposLibres.length} pendientes de factura`}},
-            retG.length>0&&{id:'retgar',p:{label:'Ret. garantía pendiente',value:fmtK(retGTot)+' €',color:C.vt,sub:`${retG.length} certificación${retG.length!==1?'es':''} · toca para ver`,onClick:()=>setKpiDetail({title:'Retenciones de garantía pendientes de devolución',list:retG})}},
-            {id:'diaspago',p:{label:'Días medio pago',value:K.avgDias||'—',color:C.ch[7]}},
-            totalPptoG>0&&{id:'ejecgasto',p:{label:'Ejecución gasto',value:pct(gastadoObras,totalPptoG)+'%',color:gastadoObras>totalPptoG?C.dn:gastadoObras>totalPptoG*0.85?C.wn:C.sc,sub:`${fmtK(gastadoObras)} € / ${fmtK(totalPptoG)} €`,onClick:()=>setKpiDetail({title:'Ejecución de gasto por obra',mode:'budget',rows:detalleGasto,kind:'gasto'})}},
-            totalPptoV>0&&{id:'ejecventa',p:{label:'Ejecución venta',value:pct(facturadoObras,totalPptoV)+'%',color:facturadoObras>=totalPptoV?C.sc:facturadoObras>=totalPptoV*0.5?C.in:C.wn,sub:`${fmtK(facturadoObras)} € / ${fmtK(totalPptoV)} €`,onClick:()=>setKpiDetail({title:'Ejecución de venta por obra',mode:'budget',rows:detalleVenta,kind:'venta'})}},
-            K.lastYearGastos>0&&{id:'yoy',p:{label:'Variación interanual',value:(K.yoyChange>=0?'+':'')+K.yoyChange+'%',color:K.yoyChange>10?C.dn:K.yoyChange<-5?C.sc:C.wn,sub:`${fmtK(K.thisYearGastos)} € vs ${fmtK(K.lastYearGastos)} € año ant.`}},
-          ]);
-          const visibles=defs.map(d=>d.id);
-          return(<>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,margin:'2px 2px 6px'}}>
-              <span style={{fontSize:10,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.06em'}}>📊 Panel · {defs.length} casetas</span>
-              <span style={{display:'flex',gap:6}}>
-                {kpiEdit&&<BtnConfirm style={{...S.sm(C.mt),padding:'4px 9px',fontSize:10,minHeight:0}} armStyle={{opacity:.85}} armedLabel="¿Restablecer? Toca otra vez" onConfirm={()=>{persistKpis({orden:[],ancho:{}});notify('Panel restablecido');}}>↺ Restablecer</BtnConfirm>}
-                <button style={{...S.sm(kpiEdit?C.sc:C.in),padding:'4px 10px',fontSize:10,minHeight:0}} onClick={()=>setKpiEdit(v=>!v)}>{kpiEdit?'✓ Hecho':'✥ Colocar'}</button>
-              </span>
-            </div>
-            {kpiEdit&&<div style={{fontSize:10,color:C.mt,margin:'0 2px 6px',lineHeight:1.4}}>Todas las casetas se pueden mover: arrástralas (o usa ◀ ▶) y pulsa ▭/◨ para ancho completo o media pantalla. Se guarda en tu nube.</div>}
-            <div style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'stretch'}}>
-              {defs.map(d=><KPI key={d.id} id={d.id} visibles={visibles} edit={kpiEdit} ancho={kpiAncho[d.id]} arrastrando={kpiDrag} onArrastrar={setKpiDrag} onSoltar={(sobre)=>{soltarKpi(kpiDrag,sobre);setKpiDrag(null);}} onMover={moverKpi} onAncho={alternaAncho} {...d.p}/>)}
-            </div>
-          </>);
-        })()}
-
-        {/* ── ALERTAS VENCIMIENTO ── */}
-        {(()=>{
-          const prox=invoices.filter(i=>{const e=getEstado(i,invoices);if(e==='pagada'||i.tipo==='anticipo')return false;
-            const vto=i.fechaVencimiento;if(!vto)return false;const d=daysBetween(today,vto);return d>=0&&d<=7;});
-          const vencidas=invoices.filter(i=>{const e=getEstado(i,invoices);return e==='vencida'||e==='parcial_vencida';});
-          if(!prox.length&&!vencidas.length)return null;
-          return(
-            <div style={{...S.card,marginTop:10,borderColor:C.dn+'66',background:C.dn+'08'}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.dn,marginBottom:6}}>⚠ ALERTAS DE VENCIMIENTO</div>
-              {vencidas.length>0&&<div style={{fontSize:11,color:C.dn,marginBottom:4}}>🔴 {vencidas.length} factura{vencidas.length>1?'s':''} vencida{vencidas.length>1?'s':''} ({fmt(vencidas.reduce((s,i)=>s+getSaldo(i,invoices),0))} €)</div>}
-              {prox.length>0&&<div style={{fontSize:11,color:C.wn}}>🟡 {prox.length} vence{prox.length>1?'n':''} en los próximos 7 días ({fmt(prox.reduce((s,i)=>s+getSaldo(i,invoices),0))} €)</div>}
-              <div style={{marginTop:6,maxHeight:100,overflowY:'auto'}}>
-                {/* Una factura vencida hoy cae en las dos listas: sin quitar
-                    repetidas, React descarta filas por clave duplicada. */}
-                {Array.from(new Map([...vencidas,...prox].map(i=>[i.id,i])).values()).slice(0,8).map(i=>(
-                  <div key={i.id} style={{fontSize:10,padding:'2px 0',color:C.mt,display:'flex',justifyContent:'space-between'}}>
-                    <span>{i.proveedor} · {i.numFactura||'s/n'}</span>
-                    <span style={{fontWeight:600}}>{fmt(getSaldo(i,invoices))} € · {fmtDate(i.fechaVencimiento)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ── ALERTA DE FLOTA Y SEGUROS (justo encima del resumen fiscal) ── */}
-        {(()=>{
-          const alV=flota.filter(v=>v.activa!==false).flatMap(v=>[['ITV',v.itv],['Seguro',v.seguroVto],['Mant.',v.mantFecha]].map(([l,d])=>({n:v.alias||v.matricula,l,dy:daysTo(d)})).filter(x=>x.dy!==null&&x.dy<=30));
-          const alP=polizas.filter(p=>p.activa!==false).map(p=>({n:(p.tipo||'Póliza')+(p.empresa&&p.empresa!=='BIG'?' · '+p.empresa:''),l:'Póliza',dy:daysTo(p.vto)})).filter(x=>x.dy!==null&&x.dy<=30);
-          const al=[...alV,...alP];
-          if(!al.length)return null;
-          al.sort((a,b)=>a.dy-b.dy);
-          return(
-            <div style={{...S.card,marginBottom:8,border:`1px solid ${al[0].dy<0?C.dn:C.wn}66`,cursor:'pointer'}} onClick={()=>setView('flota')}>
-              <div style={{fontSize:11,fontWeight:700,color:al[0].dy<0?C.dn:C.wn,marginBottom:4}}>🚛 FLOTA Y SEGUROS — {al.length} VENCIMIENTO{al.length!==1?'S':''} PRÓXIMO{al.length!==1?'S':''}</div>
-              {al.slice(0,3).map((x,i)=><div key={i} style={{fontSize:12,display:'flex',justifyContent:'space-between'}}><span>{x.l} · {x.n}</span><b style={{color:vencColor(x.dy,C)}}>{vencTxt(x.dy)}</b></div>)}
-              {al.length>3&&<div style={{fontSize:10,color:C.mt,marginTop:2}}>y {al.length-3} más — toca para ver</div>}
-            </div>
-          );
-        })()}
-
-        {/* ── RESUMEN FISCAL TRIMESTRAL ── */}
-        {(()=>{
+  // ═══ GESTIÓN › IVA · 303 (v401: antes vivía en el Panel como «Resumen fiscal») ═══
+  const ResumenFiscal=()=>{
           const qNames=['T1 (Ene-Mar)','T2 (Abr-Jun)','T3 (Jul-Sep)','T4 (Oct-Dic)'];
           const inQ=i=>{const d=new Date(i.fecha);return Math.floor(d.getMonth()/3)===fq&&d.getFullYear()===fy;};
           const qGastos=invoices.filter(i=>inQ(i)&&i.tipo!=='anticipo'&&i.tipo!=='cobro'&&i.tipo!=='personal'&&!esAnulada(i));
@@ -5936,7 +5781,7 @@ function App(){
                   <button style={S.sm(C.mt)} onClick={nextQ}>›</button>
                 </div>
               </div>
-              {(!qGastos.length&&!qCobros.length)?<div style={{textAlign:'center',color:C.mt,padding:12,fontSize:12}}>Sin operaciones en este trimestre</div>:<>
+              {(!qGastos.length&&!qCobros.length)?<div style={{textAlign:'center',color:C.mt,padding:12,fontSize:12}}>Sin operaciones en este trimestre<div style={{marginTop:8}}><button style={S.sm(C.in)} onClick={prevQ}>‹ Ver el trimestre anterior</button></div></div>:<>
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:8}}>
                 <div style={{background:C.bg+'88',borderRadius:8,padding:'8px 10px'}}>
                   <div style={{fontSize:10,fontWeight:700,color:C.sc,marginBottom:4}}>IVA REPERCUTIDO (emitidas)</div>
@@ -5970,31 +5815,249 @@ function App(){
               </>}
             </div>
           );
-        })()}
+          };
+  // ═══ GESTIÓN › GESTORÍA (v401) ═══
+  // El paquete para la gestoría sigue siendo la misma ventana de siempre
+  // (pkPeriodo); aquí tiene sitio propio, con el trimestre elegido y el atajo
+  // «solo las nuevas» para no repetir lo ya enviado.
+  const GestoriaPanel=()=>{
+    let ultimoPk=null;try{ultimoPk=JSON.parse(localStorage.getItem('bh10-gestoria-ultimo')||'null');}catch(e){}
+    const qNames=['T1 (Ene-Mar)','T2 (Abr-Jun)','T3 (Jul-Sep)','T4 (Oct-Dic)'];
+    const qIni=`${fy}-${String(fq*3+1).padStart(2,'0')}-01`, qFin=`${fy}-${String(fq*3+3).padStart(2,'0')}-${new Date(fy,fq*3+3,0).getDate()}`;
+    const enQ=invoices.filter(i=>i.tipo==='factura'&&String(i.fecha||'')>=qIni&&String(i.fecha||'')<=qFin);
+    const nuevas=ultimoPk&&ultimoPk.fecha?enQ.filter(i=>String(i.fechaRegistro||i.fecha||'')>=ultimoPk.fecha).length:0;
+    const prevQ=()=>{if(fq===0){setFq(3);setFy(fy-1);}else setFq(fq-1);};
+    const nextQ=()=>{if(fq===3){setFq(0);setFy(fy+1);}else setFq(fq+1);};
+    return(
+      <div style={{...S.card,marginTop:10}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8,flexWrap:'wrap',gap:6}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.04em'}}>📦 Envío a la gestoría</div>
+          <div style={{display:'flex',gap:4,alignItems:'center'}}>
+            <button style={S.sm(C.mt)} onClick={prevQ}>‹</button>
+            <span style={{fontSize:12,fontWeight:700,minWidth:112,textAlign:'center'}}>{qNames[fq]} {fy}</span>
+            <button style={S.sm(C.mt)} onClick={nextQ}>›</button>
+          </div>
+        </div>
+        <div style={{fontSize:13,marginBottom:4}}>Último paquete generado en este aparato: <b>{ultimoPk&&ultimoPk.fecha?`${fmtDate(ultimoPk.fecha)} (${ultimoPk.per||''})`:'ninguno todavía'}</b></div>
+        <div style={{fontSize:12,color:C.mt,marginBottom:10,lineHeight:1.45}}>En {qNames[fq]} {fy} hay <b style={{color:C.tx}}>{enQ.length} facturas recibidas</b>{ultimoPk&&ultimoPk.fecha?<>, de ellas <b style={{color:nuevas?C.wn:C.tx}}>{nuevas} registradas en la app desde el último envío</b></>:null}. El paquete lleva la lista y los documentos; «Solo las nuevas» manda únicamente lo registrado después del último envío, aunque la factura sea más antigua, sin repetir lo ya enviado.</div>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          {ES_APP&&<button style={{...S.btn(C.ac),flex:'1 1 0',minWidth:0,opacity:pkBusy?0.6:1}} disabled={pkBusy||!enQ.length} onClick={()=>setPkPeriodo({clave:'libre',trim:null,ini:qIni,fin:qFin})}>{pkBusy?'⏳ Preparando…':`📦 Preparar paquete ${qNames[fq].slice(0,2)}`}</button>}
+          {ES_APP&&ultimoPk&&ultimoPk.fecha&&<button style={{...S.sm(C.in),flex:'1 1 0',minWidth:0,padding:'10px 8px'}} disabled={pkBusy} onClick={()=>setPkPeriodo({clave:'libre',trim:null,ini:qIni,fin:qFin,regDesde:ultimoPk.fecha})}>Solo las nuevas ({nuevas})</button>}
+          <button style={{...S.sm(C.mt),flex:'1 1 0',minWidth:0,padding:'10px 8px'}} onClick={()=>setGesView('iva')}>📋 Resumen IVA y CSV</button>
+        </div>
+        {!ES_APP&&<div style={{fontSize:10,color:C.mt,marginTop:6}}>El paquete con documentos solo se prepara desde la app instalada.</div>}
+      </div>
+    );
+  };
 
-        {/* ── CASH FLOW PRÓXIMAS 4 SEMANAS ── */}
+  // ═══ DASHBOARD ═══
+  const Dashboard=()=>{
+
+    const agingData=[{name:'0-30d',value:K.aging.a030},{name:'31-60d',value:K.aging.a3160},{name:'61-90d',value:K.aging.a6190},{name:'>90d',value:K.aging.a90}].filter(d=>d.value>0);
+    return(
+      <div style={{padding:10}}>
+      {/* ── PERIODO (v401): un chip en la cabecera; el detalle se despliega al tocarlo ── */}
+      {(()=>{
+        const now=new Date();
+        const iso=d=>d.toISOString().slice(0,10);
+        const setPreset=(f,t)=>{setDashFrom(f);setDashTo(t);setPeriodoAbierto(false);};
+        const y=now.getFullYear(),mth=now.getMonth();
+        const chips=[
+          ['Todo',()=>setPreset('','')],
+          ['Este mes',()=>setPreset(iso(new Date(y,mth,1)),iso(new Date(y,mth+1,0)))],
+          ['Trimestre',()=>{const q=Math.floor(mth/3);setPreset(iso(new Date(y,q*3,1)),iso(new Date(y,q*3+3,0)));}],
+          ['Este año',()=>setPreset(y+'-01-01',y+'-12-31')],
+          ['Año pasado',()=>setPreset((y-1)+'-01-01',(y-1)+'-12-31')],
+        ];
+        const activo=dashFrom||dashTo;
+        const etiqueta=!activo?'Todo':`${dashFrom?fmtDate(dashFrom):'inicio'} → ${dashTo?fmtDate(dashTo):'hoy'}`;
+        return(
+          <div style={{marginBottom:8}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,margin:'2px 2px 0'}}>
+              <span style={{fontSize:10,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.06em'}}>📊 Panel</span>
+              <span style={{display:'flex',gap:6,alignItems:'center'}}>
+                <button style={{...S.sm(activo?C.sc:C.mt),padding:'5px 10px',fontSize:11,minHeight:0}} onClick={()=>setPeriodoAbierto(v=>!v)}>📅 {etiqueta} {periodoAbierto?'▴':'▾'}</button>
+                {kpiEdit&&<BtnConfirm style={{...S.sm(C.mt),padding:'4px 9px',fontSize:10,minHeight:0}} armStyle={{opacity:.85}} armedLabel="¿Restablecer? Toca otra vez" onConfirm={()=>{persistKpis({orden:[],ancho:{}});notify('Panel restablecido');}}>↺ Restablecer</BtnConfirm>}
+                <button style={{...S.sm(kpiEdit?C.sc:C.in),padding:'4px 10px',fontSize:10,minHeight:0}} onClick={()=>setKpiEdit(v=>!v)}>{kpiEdit?'✓ Hecho':'✥ Colocar'}</button>
+              </span>
+            </div>
+            {periodoAbierto&&(
+              <div style={{...S.card,marginTop:6,padding:'9px 10px'}}>
+                <div style={{display:'flex',gap:4,flexWrap:'nowrap'}}>
+                  {chips.map(([l,fn])=><button key={l} style={{...S.sm(C.in),flex:'1 1 0',minWidth:0,fontSize:10,padding:'6px 2px',minHeight:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} onClick={fn}>{l}</button>)}
+                </div>
+                <div style={{display:'flex',gap:6,marginTop:7,alignItems:'flex-end'}}>
+                  <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Desde</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashFrom} onChange={e=>setDashFrom(e.target.value)}/></label>
+                  <label style={{flex:'1 1 0',minWidth:0}}><span style={{fontSize:9,color:C.mt}}>Hasta</span><input type="date" style={{...S.input,padding:'5px 6px',minHeight:34,fontSize:12,width:'100%'}} value={dashTo} onChange={e=>setDashTo(e.target.value)}/></label>
+                  {activo&&<button style={{...S.sm(C.mt),flexShrink:0,padding:'6px 9px',fontSize:11,minHeight:34}} onClick={()=>setPreset('','')}>✕</button>}
+                </div>
+              </div>
+            )}
+            {kpiEdit&&<div style={{fontSize:10,color:C.mt,margin:'6px 2px 0',lineHeight:1.4}}>Todas las casetas se pueden mover: arrástralas (o usa ◀ ▶) y pulsa ▭/◨ para ancho completo o media pantalla. Se guarda en tu nube.</div>}
+          </div>
+        );
+      })()}
+
+      {invoices.length===0&&<div style={{...S.card,marginBottom:10,textAlign:'center',color:C.mt,fontSize:12,padding:'14px'}}>Aún no hay operaciones — entra en 📥 Recibidas o 📤 Emitidas para registrar la primera</div>}
+
+        {/* ── INDICADORES · HOY · PAGOS POR SEMANA · OBRAS (v401) ── */}
         {(()=>{
-          const weeks=[];
+          const cat=obras.filter(o=>o.activa!==false);
+          const totalPptoG=cat.reduce((s,o)=>s+(+o.presupuestoGasto||0),0);
+          const totalPptoV=cat.reduce((s,o)=>s+(+o.presupuestoVenta||0),0);
+          const gastadoObras=K.gastos.filter(i=>i.obra&&cat.some(o=>obraDisplay(o)===i.obra)).reduce((s,i)=>s+i.total,0);
+          const facturadoObras=K.cobros.filter(i=>i.obra&&cat.some(o=>obraDisplay(o)===i.obra)).reduce((s,i)=>s+i.total,0);
+          const detalleGasto=cat.map(o=>{const disp=obraDisplay(o);return{obra:o,disp,ppto:+o.presupuestoGasto||0,real:K.gastos.filter(i=>i.obra===disp).reduce((s,i)=>s+i.total,0)};}).filter(x=>x.ppto>0||x.real>0);
+          const detalleVenta=cat.map(o=>{const disp=obraDisplay(o);return{obra:o,disp,ppto:+o.presupuestoVenta||0,real:K.cobros.filter(i=>i.obra===disp).reduce((s,i)=>s+i.total,0)};}).filter(x=>x.ppto>0||x.real>0);
+          const retG=invoices.filter(i=>i.tipo==='cobro'&&(i.retGarImp||0)>0&&!i.retGarDevuelta);
+          const retGTot=retG.reduce((s,i)=>s+i.retGarImp,0);
+
+          // Cabecera: saldo real de proveedores (sin filtrar por periodo)
+          const impPend=recibidas.filter(i=>i.tipo!=='anticipo'&&!['pagada','aplicado','anticipo_libre'].includes(getEstado(i,invoices)));
+          const heroPend=impPend.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);
+          const vencList=impPend.filter(i=>['vencida','parcial_vencida'].includes(getEstado(i,invoices)));
+          const heroVenc=vencList.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);
+          const proxList=impPend.filter(i=>{const d=daysTo(i.fechaVencimiento);return d!==null&&d>=0&&d<=7;});
+          const proxImp=proxList.reduce((s,i)=>s+Math.max(getSaldo(i,invoices),0),0);
+          // Pagos por semana de vencimiento (4 semanas)
+          const semanas=[];
           for(let w=0;w<4;w++){
             const ws=new Date();ws.setDate(ws.getDate()+w*7);
             const we=new Date(ws);we.setDate(we.getDate()+7);
             const due=invoices.filter(i=>{if(getEstado(i,invoices)==='pagada'||i.tipo==='anticipo')return false;
               const vto=i.fechaVencimiento?new Date(i.fechaVencimiento):null;return vto&&vto>=ws&&vto<we;
             }).reduce((s,i)=>s+getSaldo(i,invoices),0);
-            weeks.push({name:`Sem ${w+1}`,salidas:due});
+            semanas.push({name:w===0?'Esta sem.':`Sem ${w+1}`,salidas:+due.toFixed(2)});
           }
-          if(weeks.every(w=>w.salidas===0))return null;
-          return(
-            <ChartBox title="Tesorería — Pagos próximas 4 semanas" h={140}>
-              <ResponsiveContainer><BarChart data={weeks} margin={{top:5,right:5,bottom:5,left:0}}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.bd+'44'}/>
-                <XAxis dataKey="name" tick={{fill:C.mt,fontSize:10}}/>
-                <YAxis tick={{fill:C.mt,fontSize:9}} tickFormatter={fmtK} width={42}/>
-                <Tooltip content={<Tip/>}/>
-                <Bar dataKey="salidas" name="Pagos previstos" fill={C.dn} radius={[3,3,0,0]}/>
-              </BarChart></ResponsiveContainer>
-            </ChartBox>
-          );
+          const sem4=semanas.reduce((s,w)=>s+w.salidas,0);
+          // IVA del trimestre en curso y del último cerrado (mismo cálculo que Gestión › IVA)
+          const hoyD=new Date(), cq=Math.floor(hoyD.getMonth()/3), cy=hoyD.getFullYear();
+          const pq=(cq+3)%4, py=cq===0?cy-1:cy;
+          const liqDe=(q,yy)=>{const en=i=>{const d=new Date(i.fecha);return Math.floor(d.getMonth()/3)===q&&d.getFullYear()===yy&&!esAnulada(i);};
+            const sop=invoices.filter(i=>en(i)&&i.tipo!=='anticipo'&&i.tipo!=='cobro'&&i.tipo!=='personal').reduce((s,i)=>s+(i.iva||0),0);
+            const rep=invoices.filter(i=>en(i)&&i.tipo==='cobro').reduce((s,i)=>s+(i.iva||0),0);return +(rep-sop).toFixed(2);};
+          const liqQ=liqDe(cq,cy), liqP=liqDe(pq,py);
+          const irIva=(q,yy)=>{setFq(q);setFy(yy);setView('gestion');setGesView('iva');};
+          // Vencimientos de flota y pólizas
+          const alV=flota.filter(v=>v.activa!==false).flatMap(v=>[['ITV',v.itv],['Seguro',v.seguroVto],['Mant.',v.mantFecha]].map(([l,d])=>({n:v.alias||v.matricula,l,dy:daysTo(d)})).filter(x=>x.dy!==null&&x.dy<=30));
+          const alP=polizas.filter(p=>p.activa!==false).map(p=>({n:(p.tipo||'Póliza')+(p.empresa&&p.empresa!=='BIG'?' · '+p.empresa:''),l:'Póliza',dy:daysTo(p.vto)})).filter(x=>x.dy!==null&&x.dy<=30);
+          const al=[...alV,...alP].sort((a,b)=>a.dy-b.dy);
+          const dudosas=invoices.filter(i=>Array.isArray(i._avisos)&&i._avisos.length).length;
+          const irRecibidas=(estado,extra)=>{setView('facturas');setSubView('recibidas');setFEstado(estado||'todos');setFMes(false);setFSinDoc(false);if(extra)extra();};
+          const irEmitidas=(estado)=>{setView('facturas');setSubView('emitidas');setFEstado(estado||'todos');};
+
+          const defs=ordenaKpis([
+            {id:'h-pendpago',p:{tipo:'hero',label:'PENDIENTE DE PAGO',value:fmt(heroPend)+' €',color:heroPend>0.01?C.wn:C.sc,sub:`${impPend.length} facturas recibidas · ${vencList.length} vencidas`,onClick:()=>irRecibidas('impagada',()=>setSortMode('vencimiento'))}},
+            {id:'h-vencido',p:{label:'Vencido',value:fmt(heroVenc)+' €',color:heroVenc>0.01?C.dn:C.sc,sub:heroVenc>0.01?`${vencList.length} facturas · abre la lista`:'nada vencido',onClick:()=>irRecibidas('vencida',()=>setSortMode('vencimiento'))}},
+            {id:'ptecobro',p:{label:'Pendiente de cobro',value:fmtK(K.totalPteCobro)+' €',color:K.totalPteCobro>0.01?'#F97316':C.sc,sub:`${K.cobros.filter(i=>getSaldo(i,invoices)>0.01).length} emitidas · abre la lista`,onClick:()=>irEmitidas('impagada')}},
+            {id:'sem4',p:{label:'Pagos 4 semanas',value:fmtK(sem4)+' €',color:sem4>0.01?C.wn:C.sc,sub:semanas[0].salidas>0?`esta semana ${fmtK(semanas[0].salidas)} €`:'nada vence esta semana',onClick:()=>irRecibidas('impagada',()=>setSortMode('vencimiento'))}},
+            {id:'ivatrim',p:{label:`IVA trimestre (T${cq+1})`,value:(liqQ>0?'+':'')+fmtK(liqQ)+' €',color:liqQ>0?C.dn:C.sc,sub:`T${pq+1} cerrado: ${fmtK(Math.abs(liqP))} € ${liqP>0?'a ingresar':'a compensar'}`,onClick:()=>irIva(cq,cy)}},
+            {id:'facturado',p:{label:'Facturado (periodo)',value:fmtK(K.totalFact)+' €',sub:`${K.gastos.length} facturas · abre la lista`,onClick:()=>irRecibidas('todos')}},
+            {id:'diaspago',p:{label:'Días medio de pago',value:K.avgDias||'—',color:C.ch[7],sub:'a proveedores'}},
+            {id:'pagado',p:{label:'Pagado',value:fmtK(K.totalPagado)+' €',color:C.sc,sub:`${pct(K.totalPagado,K.totalFact)}% del total · abre la lista`,onClick:()=>irRecibidas('pagada')}},
+            K.totalIngresos>0&&{id:'ingresos',p:{label:'Ingresos emitidos',value:fmtK(K.totalIngresos)+' €',color:C.sc,sub:`Cobrado: ${fmtK(K.totalCobrado)} €`,onClick:()=>irEmitidas('todos')}},
+            {id:'estructura',p:{label:'Gastos estructura /mes',value:fmtK(K.totalEstructuraMes)+' €',color:C.vt,sub:`${fmtK(K.totalEstructura)} € acum.`,onClick:()=>irRecibidas('todos',()=>setFTipo('estructura'))}},
+            K.totalAnticiposLibres>0&&{id:'anticipos',p:{label:'Anticipos sin aplicar',value:fmtK(K.totalAnticiposLibres)+' €',color:C.ch[4],sub:`${anticiposLibres.length} pendientes de factura`,onClick:()=>irRecibidas('todos',()=>setFTipo('anticipo'))}},
+            retG.length>0&&{id:'retgar',p:{label:'Ret. garantía pendiente',value:fmtK(retGTot)+' €',color:C.vt,sub:`${retG.length} certificación${retG.length!==1?'es':''}`,onClick:()=>{setView('contratos');setConView('garantias');}}},
+            totalPptoG>0&&{id:'ejecgasto',p:{label:'Ejecución gasto',value:pct(gastadoObras,totalPptoG)+'%',color:gastadoObras>totalPptoG?C.dn:gastadoObras>totalPptoG*0.85?C.wn:C.sc,sub:`${fmtK(gastadoObras)} € / ${fmtK(totalPptoG)} €`,onClick:()=>{setView('contratos');setConView('obras');}}},
+            totalPptoV>0&&{id:'ejecventa',p:{label:'Ejecución venta',value:pct(facturadoObras,totalPptoV)+'%',color:facturadoObras>=totalPptoV?C.sc:facturadoObras>=totalPptoV*0.5?C.in:C.wn,sub:`${fmtK(facturadoObras)} € / ${fmtK(totalPptoV)} €`,onClick:()=>{setView('contratos');setConView('obras');}}},
+            K.lastYearGastos>0&&{id:'yoy',p:{label:'Variación interanual',value:(K.yoyChange>=0?'+':'')+K.yoyChange+'%',color:K.yoyChange>10?C.dn:K.yoyChange<-5?C.sc:C.wn,sub:`${fmtK(K.thisYearGastos)} € vs ${fmtK(K.lastYearGastos)} € año ant.`}},
+          ]);
+          const visibles=defs.map(d=>d.id);
+
+          // «Hoy»: solo lo que pide acción; lo que está a cero no aparece
+          const hoy=[
+            vencList.length>0&&{k:'venc',color:C.dn,txt:`${vencList.length} factura${vencList.length>1?'s':''} vencida${vencList.length>1?'s':''}`,sub:(()=>{const v=[...vencList].sort((a,b)=>(a.fechaVencimiento||'').localeCompare(b.fechaVencimiento||''))[0];return v?`La más antigua, ${v.proveedor||'s/n'}, venció el ${fmtDate(v.fechaVencimiento)}`:'';})(),imp:fmt(heroVenc)+' €',go:()=>irRecibidas('vencida',()=>setSortMode('vencimiento'))},
+            proxList.length>0&&{k:'prox',color:C.wn,txt:`${proxList.length} vence${proxList.length>1?'n':''} en 7 días`,sub:[...new Set(proxList.map(i=>i.proveedor))].slice(0,3).join(', '),imp:fmt(proxImp)+' €',go:()=>irRecibidas('impagada',()=>setSortMode('vencimiento'))},
+            !esMiembro()&&buzonTodo.total>0&&{k:'buzon',color:buzonTodo.urgente>0?C.dn:C.wn,txt:`${buzonTodo.total} en el buzón`,sub:[buzonTodo.firmas&&`${buzonTodo.firmas} firmados`,buzonTodo.clientes&&`${buzonTodo.clientes} de clientes`,buzonTodo.proveedores&&`${buzonTodo.proveedores} de proveedores`,buzonTodo.derechos&&`${buzonTodo.derechos} derechos`].filter(Boolean).join(' · '),go:()=>setBuzonAbierto(true)},
+            dudosas>0&&{k:'dud',color:C.wn,txt:`${dudosas} lectura${dudosas>1?'s':''} dudosa${dudosas>1?'s':''} por revisar`,sub:'facturas leídas con avisos del lector',go:()=>irRecibidas('todos',()=>setSortMode('registro_desc'))},
+            al.length>0&&{k:'flota',color:al[0].dy<0?C.dn:C.wn,txt:`${al.length} vencimiento${al.length>1?'s':''} de flota y seguros`,sub:al.slice(0,2).map(x=>`${x.l} · ${x.n} · ${vencTxt(x.dy)}`).join(' · '),go:()=>setView('flota')},
+          ].filter(Boolean);
+
+          return(<>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(220px,calc(50% - 4px)),1fr))',gap:8,alignItems:'stretch'}}>
+              {defs.map(d=><KPI key={d.id} id={d.id} visibles={visibles} edit={kpiEdit} ancho={kpiAncho[d.id]} arrastrando={kpiDrag} onArrastrar={setKpiDrag} onSoltar={(sobre)=>{soltarKpi(kpiDrag,sobre);setKpiDrag(null);}} onMover={moverKpi} onAncho={alternaAncho} {...d.p}/>)}
+            </div>
+
+            {/* ── HOY ── */}
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',margin:'12px 2px 6px'}}>
+              <span style={{fontSize:10,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.06em'}}>Hoy · {fmtDate(today)}</span>
+              <span style={{fontSize:10,color:C.mt}}>{hoy.length?`${hoy.length} asunto${hoy.length>1?'s':''}`:'nada pendiente'}</span>
+            </div>
+            <div style={{...S.card,padding:0,overflow:'hidden'}}>
+              {hoy.length===0&&<div style={{padding:'12px 14px',fontSize:12,color:C.mt}}>Nada pendiente: sin vencidas, sin vencimientos esta semana, buzón vacío.</div>}
+              {hoy.map((h,ix)=>(
+                <button key={h.k} onClick={h.go} style={{display:'flex',alignItems:'center',gap:10,width:'100%',minHeight:52,padding:'8px 12px',background:'transparent',border:'none',borderTop:ix?`1px solid ${C.bd}`:'none',cursor:'pointer',textAlign:'left',color:C.tx}}>
+                  <span style={{width:9,height:9,borderRadius:999,background:h.color,flexShrink:0}}/>
+                  <span style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:1}}>
+                    <span style={{fontSize:13,fontWeight:700}}>{h.txt}</span>
+                    {h.sub&&<span style={{fontSize:11,color:C.mt,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.sub}</span>}
+                  </span>
+                  {h.imp&&<span style={{fontSize:13,fontWeight:800,color:h.color,whiteSpace:'nowrap'}}>{h.imp}</span>}
+                  <span style={{color:C.mt,fontSize:14}}>›</span>
+                </button>
+              ))}
+            </div>
+
+            {/* ── PAGOS POR SEMANA DE VENCIMIENTO ── */}
+            {sem4>0&&(
+              <ChartBox title="Pagos por semana de vencimiento" h={140}>
+                <ResponsiveContainer><BarChart data={semanas} margin={{top:5,right:5,bottom:5,left:0}}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.bd+'44'}/>
+                  <XAxis dataKey="name" tick={{fill:C.mt,fontSize:10}}/>
+                  <YAxis tick={{fill:C.mt,fontSize:9}} tickFormatter={fmtK} width={42}/>
+                  <Tooltip content={<Tip/>}/>
+                  <Bar dataKey="salidas" name="Pagos previstos" fill={C.wn} radius={[3,3,0,0]}/>
+                </BarChart></ResponsiveContainer>
+              </ChartBox>
+            )}
+
+            {/* ── OBRAS ── */}
+            {(detalleGasto.some(x=>x.ppto>0)||K.topObras.length>0)&&(
+              <div style={{...S.card,marginTop:10}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                  <span style={{fontSize:11,fontWeight:700,color:C.mt,textTransform:'uppercase',letterSpacing:'.04em'}}>🏗️ Obras</span>
+                  <button style={{...S.sm(C.in),padding:'4px 10px',fontSize:10,minHeight:0}} onClick={()=>{setView('contratos');setConView('obras');}}>Todas ({obrasAll.length})</button>
+                </div>
+                {detalleGasto.filter(x=>x.ppto>0).map(x=>{const v=detalleVenta.find(y=>y.disp===x.disp);const pg=pct(x.real,x.ppto),pv=v&&v.ppto>0?pct(v.real,v.ppto):null;return(
+                  <div key={x.disp} style={{marginBottom:10}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:4}}><b style={{fontSize:13}}>{x.disp}</b><span style={{fontSize:10,color:C.mt}}>{x.obra.viviendas?`${x.obra.viviendas} viv. · `:''}con presupuesto</span></div>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:3}}><span style={{color:C.mt}}>Gasto</span><span><b>{fmtK(x.real)} €</b> <span style={{color:C.mt}}>de {fmtK(x.ppto)} € · {pg}%</span></span></div>
+                    <div style={{height:7,background:C.bd,borderRadius:999,overflow:'hidden'}}><div style={{width:pg+'%',height:'100%',background:x.real>x.ppto?C.dn:C.in,borderRadius:999}}/></div>
+                    {pv!==null&&<>
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:11,margin:'6px 0 3px'}}><span style={{color:C.mt}}>Venta</span><span><b>{fmtK(v.real)} €</b> <span style={{color:C.mt}}>de {fmtK(v.ppto)} € · {pv}%</span></span></div>
+                      <div style={{height:7,background:C.bd,borderRadius:999,overflow:'hidden'}}><div style={{width:pv+'%',height:'100%',background:C.sc,borderRadius:999}}/></div>
+                    </>}
+                  </div>);})}
+                {K.topObras.length>0&&<>
+                  <div style={{fontSize:10,fontWeight:700,color:C.mt,margin:'4px 0 4px'}}>Gasto acumulado por obra{(dashFrom||dashTo)?' (periodo)':''}</div>
+                  {K.topObras.slice(0,5).map(o=>(
+                    <div key={o.name||o.obra} style={{display:'flex',justifyContent:'space-between',fontSize:12,padding:'5px 0',borderTop:`1px solid ${C.bd}`}}><span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',minWidth:0}}>{o.name||o.obra}</span><b style={{marginLeft:8,whiteSpace:'nowrap'}}>{fmtK(o.total)} €</b></div>
+                  ))}
+                </>}
+              </div>
+            )}
+
+            {/* ── ACCESOS: los contadores de antes, como fichas ── */}
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,margin:'10px 0 4px'}}>
+              {[
+                !esMiembro()&&['buzon','📥 Buzón',buzonTodo.total,()=>setBuzonAbierto(true)],
+                ['recibidas','📥 Recibidas',recibidas.length,()=>{setView('facturas');setSubView('recibidas');}],
+                ['emitidas','📤 Emitidas',emitidas.length,()=>{setView('facturas');setSubView('emitidas');}],
+                ['proveedores','🏪 Proveedores',proveedores.length,()=>{setView('facturas');setSubView('proveedores');}],
+                ['clientes','👤 Clientes',clientes.length,()=>{setView('facturas');setSubView('clientes');}],
+                ['obras','🏗️ Obras',obrasAll.length,()=>{setView('contratos');setConView('obras');}],
+                ['contratos','📑 Contratos',contratos.length,()=>setView('contratos')],
+                ['personal','👷 Personal',employees.filter(em=>em.activo!==false).length,()=>setView('nominas')],
+                ['c34prov','🏦 Remesas',remesas.filter(r=>r.tipo==='prov').length,()=>{setView('facturas');setSubView('remesas');}],
+                ['c34nom','💶 Remesas nóminas',remesas.filter(r=>r.tipo==='nom').length,()=>{setView('nominas');setNomView('remesas');}],
+                ['seguros','🛡️ Seguros',(polizas||[]).filter(p=>p&&p.activa!==false).length,()=>setView('flota')],
+                !esMiembro()&&['traspasos','🏢 Traspasos',traspasos.length,()=>setTraspModal('lista')],
+              ].filter(Boolean).map(([k,l,n,fn])=>(
+                <button key={k} onClick={fn} style={{display:'inline-flex',alignItems:'center',gap:5,minHeight:34,padding:'0 11px',background:C.sf,border:`1px solid ${C.bd}`,borderRadius:999,fontSize:11,fontWeight:600,color:C.tx,cursor:'pointer'}}>{l}<span style={{color:C.in,fontWeight:800}}>{n}</span></button>
+              ))}
+            </div>
+          </>);
         })()}
 
         {K.mensual.length>1&&<ChartBox title="Gastos vs Ingresos mensual"><ResponsiveContainer><BarChart data={K.mensual} margin={{top:5,right:5,bottom:5,left:0}}><CartesianGrid strokeDasharray="3 3" stroke={C.bd+'44'}/><XAxis dataKey="mes" tick={{fill:C.mt,fontSize:9}} tickFormatter={v=>{const m=+v.split('-')[1];return['E','F','M','A','My','Jn','Jl','Ag','S','O','N','D'][m-1];}}/><YAxis tick={{fill:C.mt,fontSize:9}} tickFormatter={fmtK} width={42}/><Tooltip content={<Tip/>}/><Legend wrapperStyle={{fontSize:10}}/><Bar dataKey="gastos" name="Gastos" fill={C.dn+'aa'} radius={[3,3,0,0]}/><Bar dataKey="ingresos" name="Ingresos" fill={C.sc} radius={[3,3,0,0]}/><Bar dataKey="pagado" name="Pagado" fill={C.in+'88'} radius={[3,3,0,0]}/></BarChart></ResponsiveContainer></ChartBox>}
@@ -6327,10 +6390,10 @@ function App(){
   const subActual=view==='facturas'?({recibidas:'recibidas',emitidas:'emitidas',clientes:'clientes',proveedores:'proveedores',obras:'obras',pendprov:'n43',remesas:'remesas'}[subView]||'recibidas')
     :view==='contratos'?({lista:'contratos',obras:'obras',presupuestos:'presupuestos',garantias:'garantias',financiacion:'financiacion'}[conView]||'contratos')
     :view==='nominas'?({panel:'nominas',remesar:'nominas',pdf:'nominas',plantilla:'empleados',remesas:'remesas'}[nomView]||'nominas')
-    :view==='flota'?'seguros':'';
+    :view==='flota'?'seguros':view==='gestion'?'recibidas':'';
   try{window.__BH10_SUB=subActual;}catch(e){}
   const sinAccesoSub=!!subActual&&!puedeVerSub(subActual);
-  const enTesoreria=(view==='facturas'&&(subView==='remesas'||subView==='pendprov'))||(view==='nominas'&&nomView==='remesas')||(view==='contratos'&&conView==='financiacion')||view==='flota';
+  const enTesoreria=view==='gestion'||(view==='facturas'&&(subView==='remesas'||subView==='pendprov'))||(view==='nominas'&&nomView==='remesas')||(view==='contratos'&&conView==='financiacion')||view==='flota';
   const irPestana=(k)=>{
     // cada pestaña aterriza en su primera subpantalla que el usuario pueda ver
     if(k==='tesoreria'){if(puedeVerSub('remesas')&&puedeVer('facturas')){setView('facturas');setSubView('remesas');}else if(puedeVerSub('n43')&&puedeVer('facturas')){setView('facturas');setSubView('pendprov');}else if(puedeVerSub('financiacion')&&puedeVer('contratos')){setView('contratos');setConView('financiacion');}else if(puedeVerSub('seguros')){setView('flota');}else if(puedeVerSub('remesas')&&puedeVer('nominas')){setView('nominas');setNomView('remesas');}return;}
@@ -6339,22 +6402,40 @@ function App(){
     if(k==='facturas'){setView('facturas');setSubView(puedeVerSub('recibidas')?'recibidas':puedeVerSub('emitidas')?'emitidas':puedeVerSub('clientes')?'clientes':'proveedores');return;}
     setView(k);
   };
-  const tesoActiva=view==='flota'?'seguros':view==='facturas'?(subView==='remesas'?'remprov':'pendprov'):view==='nominas'?'remnom':'financiacion';
-  const BarraTeso=()=>(
-    <div style={{...S.filaFija,overflowX:'auto',WebkitOverflowScrolling:'touch'}} data-barra="tesoreria">
-      <div style={{display:'flex',gap:1,background:C.sf,borderRadius:10,padding:3,minWidth:'max-content'}}>
-        {[['remprov','🏦 Remesas prov.',()=>{setView('facturas');setSubView('remesas');},'facturas','remesas'],
-          ['remnom','💶 Remesas nóminas',()=>{setView('nominas');setNomView('remesas');},'nominas','remesas'],
-          ['pendprov','💰 Pendiente y N43',()=>{setView('facturas');setSubView('pendprov');},'facturas','n43'],
-          ['financiacion','🏦 Financiación',()=>{setView('contratos');setConView('financiacion');},'contratos','financiacion'],
-          ['seguros','🛡️ Seguros',()=>setView('flota'),'seguros','seguros']].filter(([,,,area,sub])=>puedeVer(area)&&puedeVerSub(sub)).map(([k,l,fn])=>(
-          <button key={k} onClick={fn} style={{padding:'8px 10px',border:'none',cursor:'pointer',fontSize:11,fontWeight:tesoActiva===k?700:500,borderRadius:8,background:tesoActiva===k?C.ac+'22':'transparent',color:tesoActiva===k?C.ac:C.mt,whiteSpace:'nowrap'}}>{l}</button>
-        ))}
-        {puedeVer('tesoreria')&&puedeVerSub('prevision')&&<button onClick={()=>setVerTeso(true)} style={{padding:'8px 10px',border:'none',cursor:'pointer',fontSize:11,borderRadius:8,background:'transparent',color:C.mt,whiteSpace:'nowrap'}}>📈 Previsión</button>}
-        {!esMiembro()&&<button onClick={()=>setTraspModal('lista')} style={{padding:'8px 10px',border:'none',cursor:'pointer',fontSize:11,borderRadius:8,background:'transparent',color:C.mt,whiteSpace:'nowrap'}}>🔁 Traspasos</button>}
+  const tesoActiva=view==='gestion'?gesView:view==='flota'?'seguros':view==='facturas'?(subView==='remesas'?'remprov':'pendprov'):view==='nominas'?'remnom':'financiacion';
+  // v401 · Jesús: «cambia Tesorería por Gestión, llévate Gestoría e IVA allí y
+  // que no haya que hacer scroll horizontal». Ocho apartados en dos filas de
+  // cuatro: caben en cualquier móvil y cada uno es un botón de 44 px de alto.
+  const BarraTeso=()=>{
+    const items=[
+      ['remprov','🏦','Remesas',()=>{setView('facturas');setSubView('remesas');},'facturas','remesas'],
+      ['remnom','💶','Nóminas',()=>{setView('nominas');setNomView('remesas');},'nominas','remesas'],
+      ['pendprov','🏧','Banco N43',()=>{setView('facturas');setSubView('pendprov');},'facturas','n43'],
+      ['financiacion','📈','Financiación',()=>{setView('contratos');setConView('financiacion');},'contratos','financiacion'],
+      ['iva','📋','IVA · 303',()=>{
+        // Al entrar, si el trimestre en curso aún no tiene operaciones (acaba de
+        // empezar), se muestra el último cerrado: es el que hay que presentar.
+        const d=new Date(), cq=Math.floor(d.getMonth()/3), cy=d.getFullYear();
+        const hayQ=invoices.some(i=>{const f=new Date(i.fecha);return Math.floor(f.getMonth()/3)===cq&&f.getFullYear()===cy&&!esAnulada(i);});
+        if(!hayQ&&view!=='gestion'){setFq((cq+3)%4);setFy(cq===0?cy-1:cy);}
+        setView('gestion');setGesView('iva');},'facturas','recibidas'],
+      ['gestoria','📦','Gestoría',()=>{setView('gestion');setGesView('gestoria');},'facturas','recibidas'],
+      ['seguros','🛡️','Seguros',()=>setView('flota'),'seguros','seguros'],
+      ['prevision','🔮','Previsión',()=>setVerTeso(true),'tesoreria','prevision'],
+    ].filter(([,,,,area,sub])=>puedeVer(area)&&puedeVerSub(sub));
+    return (
+      <div style={{...S.filaFija,paddingBottom:8}} data-barra="tesoreria">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:4,background:C.sf,borderRadius:10,padding:4}}>
+          {items.map(([k,ic,l,fn])=>{const on=tesoActiva===k;return(
+            <button key={k} onClick={fn} style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,minHeight:44,padding:'5px 2px',border:'none',cursor:'pointer',borderRadius:8,background:on?C.ac+'22':'transparent',color:on?C.ac:C.mt,minWidth:0}}>
+              <span style={{fontSize:15,lineHeight:1,filter:on?'none':'grayscale(55%) opacity(.8)'}}>{ic}</span>
+              <span style={{fontSize:10,fontWeight:on?800:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:'100%'}}>{l}</span>
+            </button>);})}
+          {!esMiembro()&&<button onClick={()=>setTraspModal('lista')} style={{gridColumn:'1 / -1',padding:'6px 10px',border:'none',cursor:'pointer',fontSize:11,borderRadius:8,background:'transparent',color:C.mt}}>🔁 Traspasos entre empresas</button>}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   const subTab=(k,l,icon,count)=><button key={k} style={{padding:'8px 10px',border:'none',cursor:'pointer',fontSize:12,fontWeight:subView===k?700:500,background:subView===k?C.in+'22':'transparent',color:subView===k?C.in:C.mt,borderRadius:8,position:'relative',minHeight:40}} onClick={()=>{setSubView(k);setFEstado('todos');setFTipo('todos');setFObra('todas');setFProv('todos');setExpObra(null);setSelected(new Set());setFocoProv('');setFocoCli('');}}>{icon} {l}{count>0&&<span style={{marginLeft:3,fontSize:9,opacity:.7}}>({count})</span>}</button>;
 
   const recibidas=useMemo(()=>invoices.filter(i=>i.tipo!=='cobro'),[invoices]);
@@ -9530,6 +9611,13 @@ function App(){
           </div>
         </div></div>);})()}
       {!sinAccesoSub&&view==='nominas'&&Nominas()}
+      {!sinAccesoSub&&view==='gestion'&&(
+        <div style={{padding:10}}>
+          <BarraTeso/>
+          {gesView==='iva'&&ResumenFiscal()}
+          {gesView==='gestoria'&&GestoriaPanel()}
+        </div>
+      )}
       {!sinAccesoSub&&view==='flota'&&(()=>{
         const empC={BIG:C.in,GREEN:C.sc,BENITO:C.vt};
         const Chip=({e})=>e&&e!=='BIG'?<span style={{fontSize:8,fontWeight:800,color:empC[e]||C.mt,border:`1px solid ${empC[e]||C.mt}66`,borderRadius:5,padding:'0 4px',marginLeft:5,verticalAlign:'middle'}}>{e}</span>:null;
@@ -12784,7 +12872,7 @@ function App(){
       <div id="bh-tabbar" style={{background:C.sf,borderTop:`1px solid ${C.bd}`,display:'flex',zIndex:50,
         height:ALTO_TAB,paddingBottom:SAFE_B,boxShadow:'0 -2px 12px rgba(0,0,0,.35)',flexShrink:0,
         transform:`translateY(${TAB_OFF})`,marginTop:`calc(-1 * ${TAB_OFF})`}}>
-        {[['dashboard','📊','Panel'],['facturas','📋','Facturas'],['contratos','🏗','Obras'],['tesoreria','🏦','Tesorería'],['nominas','👷','Plantilla'],['config','⚙️','Ajustes']].filter(([k])=>k==='tesoreria'?(puedeVer('facturas')||puedeVer('nominas')||puedeVer('contratos')||puedeVer('seguros')):(!AREA_DE_VISTA[k]||puedeVer(AREA_DE_VISTA[k]))).map(([k,ic,l])=>(
+        {[['dashboard','📊','Panel'],['facturas','📋','Facturas'],['contratos','🏗','Obras'],['tesoreria','🗂️','Gestión'],['nominas','👷','Plantilla'],['config','⚙️','Ajustes']].filter(([k])=>k==='tesoreria'?(puedeVer('facturas')||puedeVer('nominas')||puedeVer('contratos')||puedeVer('seguros')):(!AREA_DE_VISTA[k]||puedeVer(AREA_DE_VISTA[k]))).map(([k,ic,l])=>(
           <button key={k} onClick={()=>irPestana(k)} style={{flex:1,background:'transparent',border:'none',cursor:'pointer',padding:'6px 2px 4px',display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
             <span style={{fontSize:`calc(${TAB_H} * .38)`,lineHeight:1,filter:(k==='tesoreria'?enTesoreria:(view===k&&!enTesoreria))?'none':'grayscale(55%) opacity(.75)'}}>{ic}</span>
             <span style={{fontSize:`calc(${TAB_H} * .19)`,lineHeight:1.1,fontWeight:(k==='tesoreria'?enTesoreria:(view===k&&!enTesoreria))?700:500,color:(k==='tesoreria'?enTesoreria:(view===k&&!enTesoreria))?C.ac:C.mt,

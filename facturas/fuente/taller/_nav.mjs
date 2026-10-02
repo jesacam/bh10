@@ -3,18 +3,24 @@
 // Ajustes). Las baterías siguen diciendo «Contratos», «Nóminas», «Seguros»,
 // «🏦 Remesas»…: este mapa las lleva a la pantalla de siempre por el camino
 // nuevo. Un solo sitio que mantener.
+// v401 · la pestaña se llama Gestión (antes Tesorería) y sus apartados llevan el
+// icono en un span aparte: las expresiones aceptan las dos versiones, porque las
+// baterías A/B también navegan por el bundle desplegado anterior.
+const TAB_GESTION=/^(🏦|🗂️)?\s*(Tesorería|Gestión)$/;
 const PASOS={
   'Panel':[/^📊?\s*Panel$/],
   'Facturas':[/^📋?\s*Facturas$/],
   'Contratos':[/^🏗?\s*Obras$/,/📑 Contratos/],
   'Nóminas':[/^👷?\s*Plantilla$/,/📊 Nóminas/],
-  'Seguros':[/^🏦?\s*Tesorería$/,/🛡️ Seguros/],
+  'Seguros':[TAB_GESTION,/^🛡️\s*Seguros$/],
   'Ajustes':[/^⚙️?\s*Ajustes$/],
-  '🏦 Remesas':[/^🏦?\s*Tesorería$/,/🏦 Remesas prov\./],   // en Facturas era el de proveedores (así lo capturaba el A/B)
-  '🏦 Remesas nóminas':[/^🏦?\s*Tesorería$/,/💶 Remesas nóminas/],
-  'Remesas':[/^🏦?\s*Tesorería$/,/🏦 Remesas prov\./],
-  'Pendiente':[/^🏦?\s*Tesorería$/,/💰 Pendiente y N43/],
-  '🏦 Financiación':[/^🏦?\s*Tesorería$/,/🏦 Financiación/],
+  '🏦 Remesas':[TAB_GESTION,/^🏦\s*Remesas( prov\.)?$/],   // en Facturas era el de proveedores (así lo capturaba el A/B)
+  '🏦 Remesas nóminas':[TAB_GESTION,/^💶\s*(Remesas )?[Nn]óminas$/],
+  'Remesas':[TAB_GESTION,/^🏦\s*Remesas( prov\.)?$/],
+  'Pendiente':[TAB_GESTION,/^(💰\s*Pendiente y N43|🏧\s*Banco N43)$/],
+  '🏦 Financiación':[TAB_GESTION,/^(🏦|📈)\s*Financiación$/],
+  'IVA':[TAB_GESTION,/^📋\s*IVA · 303$/],
+  'Gestoría':[TAB_GESTION,/^📦\s*Gestoría$/],
   '📊 Panel':[/📊 Nóminas/],
   '📋 Contratos':[/📑 Contratos/],
 };

@@ -26,25 +26,25 @@ const mkStorage=()=>({
 
 const escenarios=[
  {n:'DUEÑO (todo igual que hoy)', rol:'admin', permisos:null,
-  espera:{tabs:['Panel','Facturas','Obras','Tesorería','Plantilla','Ajustes'], sinTabs:['Contratos','Nóminas','Seguros'], master:true, teso:true}},
+  espera:{tabs:['Panel','Facturas','Obras','Gestión','Plantilla','Ajustes'], sinTabs:['Contratos','Nóminas','Seguros'], master:true, teso:true}},
  {n:'MIEMBRO Benito (facturas admin, contratos lectura, resto nada)', rol:'admin',
   permisos:{facturas:'admin',contratos:'lectura',nominas:'',seguros:'',tesoreria:'',ajustes:''},
-  espera:{tabs:['Panel','Facturas','Obras','Tesorería'], sinTabs:['Plantilla','Ajustes','Nóminas','Seguros'], master:false, teso:false}},
+  espera:{tabs:['Panel','Facturas','Obras','Gestión'], sinTabs:['Plantilla','Ajustes','Nóminas','Seguros'], master:false, teso:false}},
  {n:'MIEMBRO con Ajustes en admin (el máximo que se puede dar desde Master)', rol:'admin',
   permisos:{facturas:'admin',contratos:'admin',nominas:'admin',seguros:'admin',tesoreria:'admin',ajustes:'admin'},
-  espera:{tabs:['Panel','Facturas','Obras','Tesorería','Plantilla','Ajustes'], master:false, teso:true,
+  espera:{tabs:['Panel','Facturas','Obras','Gestión','Plantilla','Ajustes'], master:false, teso:true,
     ajustesSin:['Clave API','Copia de seguridad completa','Borrar todo','Custodia y destrucción','Panel Master','Portal de proveedores','Consumo de la clave API'],
     ajustesCon:['Archivar documentos','Remesas y pagos','Apariencia']}},
  {n:'MIEMBRO con Ajustes en lectura', rol:'admin',
   permisos:{facturas:'admin',contratos:'lectura',nominas:'',seguros:'',tesoreria:'',ajustes:'lectura'},
-  espera:{tabs:['Panel','Facturas','Obras','Tesorería','Ajustes'], master:false, teso:false,
+  espera:{tabs:['Panel','Facturas','Obras','Gestión','Ajustes'], master:false, teso:false,
     ajustesSin:['Clave API','Copia de seguridad completa','Borrar todo','Custodia y destrucción','Panel Master','Portal de proveedores','Consumo de la clave API','Datos empresa ordenante','Registro VERI','Exportar','Importar desde Excel']}},
  {n:'MIEMBRO solo-lectura total', rol:'admin',
   permisos:{facturas:'lectura',contratos:'',nominas:'',seguros:'',tesoreria:'lectura',ajustes:''},
-  espera:{tabs:['Panel','Facturas','Tesorería'], sinTabs:['Obras','Plantilla','Ajustes'], master:false, teso:true}},
+  espera:{tabs:['Panel','Facturas','Gestión'], sinTabs:['Obras','Plantilla','Ajustes'], master:false, teso:true}},
 ];
 
-const {default:App}=await import('../web_subir/app/assets/bh10-APPV400.js');
+const {default:App}=await import('../web_subir/app/assets/bh10-APPV401.js');
 let fallos=0;
 const ok=(c,m)=>{console.log((c?'  ✓ ':'  ✗ ')+m); if(!c)fallos++;};
 
